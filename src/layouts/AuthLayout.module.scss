@@ -1,0 +1,33 @@
+.authLayout {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #fff;
+  padding: 20px;
+}
+
+.authImage {
+  display: none;
+  width: 28%;
+
+  img {
+    width: 100%;
+  }
+}
+
+.authFormContainer {
+  max-width: 350px;
+  width: 100%;
+}
+
+@media (min-width: 876px) {
+  .authImage {
+    display: block;
+    margin-right: 32px;
+  }
+
+  .authFormContainer {
+    margin-top: 12px;
+  }
+}
