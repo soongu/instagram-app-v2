@@ -1,5 +1,5 @@
 import {Link, NavLink} from 'react-router-dom';
-import defaultProfileImage from '../../../assets/images/default-profile.svg';
+import defaultProfileImage from '../../assets/images/default-profile.svg';
 import {
   FaAt,
   FaBars,

@@ -3,32 +3,38 @@
 import {createBrowserRouter, RouterProvider} from "react-router-dom";
 import RootLayout from "./layouts/RootLayout";
 import './styles/global.scss';
+import AuthLayout from "./layouts/AuthLayout";
+import LoginPage from "./pages/auth/LoginPage";
+import SignupPage from "./pages/auth/SignupPage.jsx";
+
+// 인증 여부를 판단하는 함수
+const isAuthenticated = () => {
+  // 실제로는 로컬 스토리지, 쿠키, 또는 Redux 등에서 인증 정보를 확인
+  return false;
+};
 
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <RootLayout />,
-    // children: [
-    //   {
-    //     index: true,
-    //     element: <HomePage />
-    //   },
-    //   // 다른 인증이 필요한 라우트들은 나중에 추가
-    // ]
+    element: isAuthenticated() ? <RootLayout /> : <AuthLayout isLoginPage={true} />,
+    children: [
+      {
+        index: true,
+        element: isAuthenticated() ? <div>welcome</div> : <LoginPage />
+      },
+    ]
   },
-  // {
-  //   element: <AuthLayout />,
-  //   children: [
-  //     {
-  //       path: 'login',
-  //       element: <LoginPage />
-  //     },
-  //     {
-  //       path: 'signup',
-  //       element: <SignupPage />
-  //     }
-  //   ]
-  // }
+  {
+    path: '/signup',
+    element: <AuthLayout isLoginPage={false} />,
+    children: [
+      {
+        index: true,
+        element: <SignupPage />
+      }
+    ]
+  }
+
 ]);
 
 

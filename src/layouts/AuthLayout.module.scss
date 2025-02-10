@@ -8,26 +8,15 @@
 }
 
 .authImage {
-  display: none;
-  width: 28%;
+  width: 24%;
 
   img {
     width: 100%;
   }
 }
 
+
 .authFormContainer {
   max-width: 350px;
   width: 100%;
-}
-
-@media (min-width: 876px) {
-  .authImage {
-    display: block;
-    margin-right: 32px;
-  }
-
-  .authFormContainer {
-    margin-top: 12px;
-  }
 }

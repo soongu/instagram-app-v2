@@ -1,4 +1,4 @@
-export default function InstagramLogo() {
+const InstagramLogo = () => {
   return (
     <svg aria-label="Instagram" className="_ab6-" color="rgb(0, 0, 0)" fill="rgb(0, 0, 0)" height="29" role="img"
          viewBox="32 4 113 32" width="103">
@@ -8,3 +8,5 @@ export default function InstagramLogo() {
     </svg>
   );
 }
+
+export default InstagramLogo;

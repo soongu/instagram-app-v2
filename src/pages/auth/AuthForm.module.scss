@@ -1,0 +1,85 @@
+.authForm {
+  margin: 24px 0;
+}
+
+.formField {
+  margin-bottom: 6px;
+  position: relative;
+
+  .inputContainer {
+    position: relative;
+    width: 100%;
+  }
+
+  input {
+    width: 100%;
+    padding: 9px 8px;
+    border: 1px solid #dbdbdb;
+    border-radius: 3px;
+    background-color: #fafafa;
+    font-size: 12px;
+
+    &:focus {
+      border-color: #a8a8a8;
+      outline: none;
+    }
+  }
+
+  &.error input {
+    border-color: #ed4956;
+  }
+}
+
+.errorMessage {
+  color: #ed4956;
+  font-size: 12px;
+  margin: 4px 0;
+  display: block;
+}
+
+.authButton {
+  width: 100%;
+  padding: 7px 16px;
+  background-color: #0095f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  margin: 8px 0;
+
+  &:disabled {
+    background-color: #b2dffc;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+}
+
+.passwordToggle {
+  display: none;
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: none;
+  color: #262626;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px;
+}
+
+.passwordFeedback {
+  display: block;
+  font-size: 12px;
+  margin-top: 4px;
+
+  &.warning {
+    color: #f7a700;
+  }
+
+  &.success {
+    color: #00a400;
+  }
+}

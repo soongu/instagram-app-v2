@@ -1,0 +1,35 @@
+@import "./AuthForm.module.scss";
+
+
+// Login Page Specific Styles
+.facebookLogin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #385185;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  margin: 8px 0;
+}
+
+.forgotPassword {
+  display: block;
+  color: #00376b;
+  font-size: 12px;
+  text-decoration: none;
+  margin-top: 12px;
+}
+
+.signupCard {
+  p {
+    font-size: 14px;
+  }
+
+  a {
+    color: #0095f6;
+    text-decoration: none;
+    font-weight: 600;
+  }
+}
