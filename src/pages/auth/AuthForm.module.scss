@@ -57,7 +57,6 @@
 }
 
 .passwordToggle {
-  display: none;
   position: absolute;
   right: 8px;
   top: 50%;
@@ -75,11 +74,15 @@
   font-size: 12px;
   margin-top: 4px;
 
-  &.warning {
-    color: #f7a700;
+  &.weak {
+    color: #f7a700;  // 주황색 (약한 비밀번호)
   }
 
-  &.success {
-    color: #00a400;
+  &.medium {
+    color: #00a400;  // 초록색 (중간 강도)
+  }
+
+  &.strong {
+    color: #4caf50;  // 진한 초록색 (강한 비밀번호)
   }
 }

@@ -21,6 +21,12 @@ const Signup = () => {
     password: '',
   });
 
+  // 비밀번호 강도 상태 추가
+  const [passwordStrength, setPasswordStrength] = useState({
+    type: '',
+    message: '',
+  });
+
   // 입력값 검증을 수행하는 함수
   const validateField = (fieldName, value) => {
     let errorMessage = '';
@@ -46,6 +52,33 @@ const Signup = () => {
       ...prevErrors,
       [name]: errorMessage,
     }));
+
+    // 비밀번호 강도 체크
+    if (name === 'password') {
+      const strength = checkPasswordStrength(value);
+      switch (strength) {
+        case 'weak':
+          setPasswordStrength({
+            type: 'weak',
+            message: ValidationRules.password.messages.weak,
+          });
+          break;
+        case 'medium':
+          setPasswordStrength({
+            type: 'medium',
+            message: ValidationRules.password.messages.medium,
+          });
+          break;
+        case 'strong':
+          setPasswordStrength({
+            type: 'strong',
+            message: ValidationRules.password.messages.strong,
+          });
+          break;
+        default:
+          setPasswordStrength({ type: '', message: '' });
+      }
+    }
   };
 
   const handleSubmit = (e) => {
@@ -92,7 +125,7 @@ const Signup = () => {
       </div>
 
       <div className={styles.formField}>
-        <div className="input-container">
+        <div className={styles.inputContainer}>
           <input
             type="password"
             name="password"
@@ -105,6 +138,16 @@ const Signup = () => {
         </div>
 
         {errors.password && <span className={styles.errorMessage}>{errors.password}</span>}
+        {formData.password && (
+          <div
+            className={`
+              ${styles.passwordFeedback} 
+              ${styles[passwordStrength.type]}
+            `}
+          >
+            {passwordStrength.message}
+          </div>
+        )}
       </div>
 
       <p className={styles.privacyText}>
