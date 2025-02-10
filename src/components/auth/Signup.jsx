@@ -1,7 +1,8 @@
 // Signup.jsx
-import {useEffect, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import styles from '../../pages/auth/SignupPage.module.scss';
 import {checkPasswordStrength, ValidationRules} from "../../utils/ValidationRules";
+import {debounce} from "lodash";
 
 const Signup = () => {
 
@@ -47,6 +48,47 @@ const Signup = () => {
     return errorMessage;
   };
 
+  // Debounce된 검증 함수 생성
+  const debouncedValidateField = useCallback(
+    debounce((fieldName, value) => {
+      const errorMessage = validateField(fieldName, value);
+
+      setErrors(prevErrors => ({
+        ...prevErrors,
+        [fieldName]: errorMessage
+      }));
+
+      // 비밀번호 강도 체크
+      if (fieldName === 'password') {
+        const strength = checkPasswordStrength(value);
+        switch (strength) {
+          case 'weak':
+            setPasswordStrength({
+              type: 'weak',
+              message: ValidationRules.password.messages.weak,
+            });
+            break;
+          case 'medium':
+            setPasswordStrength({
+              type: 'medium',
+              message: ValidationRules.password.messages.medium,
+            });
+            break;
+          case 'strong':
+            setPasswordStrength({
+              type: 'strong',
+              message: ValidationRules.password.messages.strong,
+            });
+            break;
+          default:
+            setPasswordStrength({type: '', message: ''});
+        }
+      }
+
+    }, 500),
+    []
+  );
+
   const handleChange = (e) => {
     const {name, value} = e.target;
     setFormData((prevData) => ({
@@ -54,38 +96,10 @@ const Signup = () => {
       [name]: value,
     }));
 
-    const errorMessage = validateField(name, value);
-    setErrors((prevErrors) => ({
-      ...prevErrors,
-      [name]: errorMessage,
-    }));
+    // 입력 필드별 디바운스 검증
+    debouncedValidateField(name, value);
 
-    // 비밀번호 강도 체크
-    if (name === 'password') {
-      const strength = checkPasswordStrength(value);
-      switch (strength) {
-        case 'weak':
-          setPasswordStrength({
-            type: 'weak',
-            message: ValidationRules.password.messages.weak,
-          });
-          break;
-        case 'medium':
-          setPasswordStrength({
-            type: 'medium',
-            message: ValidationRules.password.messages.medium,
-          });
-          break;
-        case 'strong':
-          setPasswordStrength({
-            type: 'strong',
-            message: ValidationRules.password.messages.strong,
-          });
-          break;
-        default:
-          setPasswordStrength({type: '', message: ''});
-      }
-    }
+
   };
 
   // 비밀번호 보기/숨기기 토글
@@ -99,7 +113,7 @@ const Signup = () => {
     // 모든 필드가 채워져 있고 에러가 없는지 확인
     const isAllFieldsFilled = Object.values(formData).every(value => value.trim() !== '');
     const isNoErrors = Object.values(errors).every(error => error === '');
-    const isStrongPassword = passwordStrength.type === 'strong';
+    const isStrongPassword = passwordStrength.type !== 'weak';
 
     // 모든 조건을 만족하면 submit 버튼 활성화
     setIsSubmitDisabled(!(isAllFieldsFilled && isNoErrors && isStrongPassword));
