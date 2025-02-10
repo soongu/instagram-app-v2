@@ -1,7 +1,7 @@
 // Signup.jsx
-import {useRef, useState} from 'react';
+import {useEffect, useState} from 'react';
 import styles from '../../pages/auth/SignupPage.module.scss';
-import {ValidationRules, checkPasswordStrength} from "../../utils/ValidationRules";
+import {checkPasswordStrength, ValidationRules} from "../../utils/ValidationRules";
 
 const Signup = () => {
 
@@ -30,6 +30,8 @@ const Signup = () => {
   // 비밀번호 보기/숨기기 상태
   const [showPassword, setShowPassword] = useState(false);
 
+  // 버튼 활성화 상태를 관리할 state 추가
+  const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
 
 
   // 입력값 검증을 수행하는 함수
@@ -81,7 +83,7 @@ const Signup = () => {
           });
           break;
         default:
-          setPasswordStrength({ type: '', message: '' });
+          setPasswordStrength({type: '', message: ''});
       }
     }
   };
@@ -90,6 +92,23 @@ const Signup = () => {
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
+
+
+  // 폼 유효성 검사 함수 추가
+  const validateForm = () => {
+    // 모든 필드가 채워져 있고 에러가 없는지 확인
+    const isAllFieldsFilled = Object.values(formData).every(value => value.trim() !== '');
+    const isNoErrors = Object.values(errors).every(error => error === '');
+    const isStrongPassword = passwordStrength.type === 'strong';
+
+    // 모든 조건을 만족하면 submit 버튼 활성화
+    setIsSubmitDisabled(!(isAllFieldsFilled && isNoErrors && isStrongPassword));
+  };
+
+  // formData나 errors가 변경될 때마다 유효성 검사
+  useEffect(() => {
+    validateForm();
+  }, [formData, errors, passwordStrength]);
 
 
   const handleSubmit = (e) => {
@@ -176,7 +195,7 @@ const Signup = () => {
         <a href="#">더 알아보기</a>
       </p>
 
-      <button type="submit" className={styles.authButton}>가입</button>
+      <button type="submit" className={styles.authButton} disabled={isSubmitDisabled}>가입</button>
 
     </form>
   );
