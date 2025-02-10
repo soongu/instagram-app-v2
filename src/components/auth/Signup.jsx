@@ -1,5 +1,5 @@
 // Signup.jsx
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import styles from '../../pages/auth/SignupPage.module.scss';
 import {ValidationRules, checkPasswordStrength} from "../../utils/ValidationRules";
 
@@ -26,6 +26,11 @@ const Signup = () => {
     type: '',
     message: '',
   });
+
+  // 비밀번호 보기/숨기기 상태
+  const [showPassword, setShowPassword] = useState(false);
+
+
 
   // 입력값 검증을 수행하는 함수
   const validateField = (fieldName, value) => {
@@ -81,6 +86,12 @@ const Signup = () => {
     }
   };
 
+  // 비밀번호 보기/숨기기 토글
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+
   const handleSubmit = (e) => {
     e.preventDefault();
     // TODO: 회원가입 요청
@@ -127,14 +138,24 @@ const Signup = () => {
       <div className={styles.formField}>
         <div className={styles.inputContainer}>
           <input
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             name="password"
             placeholder="비밀번호"
             required
             value={formData.password}
             onChange={handleChange}
           />
-          <button type="button" className={styles.passwordToggle}>패스워드 표시</button>
+
+          {formData.password && (
+            <button
+              type="button"
+              className={styles.passwordToggle}
+              onClick={togglePasswordVisibility}
+            >
+              {showPassword ? '숨기기' : '패스워드 표시'}
+            </button>
+          )}
+
         </div>
 
         {errors.password && <span className={styles.errorMessage}>{errors.password}</span>}
