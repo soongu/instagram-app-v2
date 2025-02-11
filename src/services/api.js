@@ -38,5 +38,5 @@ export const authApi = {
 
 // 피드 관련 API
 export const feedApi = {
-  getFeedPosts: () => api.get('/posts')
+  getFeedPosts: (page) => api.get(`/posts?page=${page}`)
 };
