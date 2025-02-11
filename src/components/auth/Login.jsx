@@ -1,13 +1,14 @@
+// src/components/auth/Login.jsx
 import { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { loginUser } from '../../features/auth/authSlice';
+import { useDispatch } from 'react-redux';
+import { setToken } from '../../features/auth/authSlice';
+import { authApi } from '../../services/api';
 import styles from "../../pages/auth/LoginPage.module.scss";
 
 const Login = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { status, error } = useSelector((state) => state.auth);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const [formData, setFormData] = useState({
     username: '',
@@ -20,20 +21,26 @@ const Login = () => {
       ...prev,
       [name]: value,
     }));
+    // 에러 메시지 초기화
+    setError(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError(null);
 
     try {
-      await dispatch(loginUser(formData));
-      navigate('/');
+      const response = await authApi.login(formData);
+      dispatch(setToken(response.data.accessToken));
     } catch (error) {
-      console.error('로그인 실패:', error);
+      setError(error.response?.data?.message || '로그인에 실패했습니다.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const isDisabled = !formData.username || !formData.password || status === 'loading';
+  const isDisabled = !formData.username || !formData.password || isLoading;
 
   return (
     <form className={styles.authForm} onSubmit={handleSubmit} noValidate>
@@ -45,7 +52,7 @@ const Login = () => {
           required
           value={formData.username}
           onChange={handleChange}
-          disabled={status === 'loading'}
+          disabled={isLoading}
         />
       </div>
       <div className={styles.formField}>
@@ -56,7 +63,7 @@ const Login = () => {
           required
           value={formData.password}
           onChange={handleChange}
-          disabled={status === 'loading'}
+          disabled={isLoading}
         />
       </div>
       {error && <div className={styles.errorMessage}>{error}</div>}
@@ -65,7 +72,7 @@ const Login = () => {
         className={styles.authButton}
         disabled={isDisabled}
       >
-        {status === 'loading' ? '로그인 중...' : '로그인'}
+        {isLoading ? '로그인 중...' : '로그인'}
       </button>
     </form>
   );
