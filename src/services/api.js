@@ -17,4 +17,7 @@ export const authApi = {
 
   // 회원가입 요청
   signup: (userData) => api.post('/auth/signup', userData),
+
+  // 로그인 요청
+  login: (credentials) => api.post('/auth/login', credentials),
 };

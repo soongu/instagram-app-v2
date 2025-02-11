@@ -5,7 +5,9 @@ import RootLayout from "./layouts/RootLayout";
 import './styles/global.scss';
 import AuthLayout from "./layouts/AuthLayout";
 import LoginPage from "./pages/auth/LoginPage";
-import SignupPage from "./pages/auth/SignupPage.jsx";
+import SignupPage from "./pages/auth/SignupPage";
+import {Provider} from "react-redux";
+import {store} from "./store/index";
 
 // 인증 여부를 판단하는 함수
 const isAuthenticated = () => {
@@ -41,9 +43,9 @@ const router = createBrowserRouter([
 const App = () => {
 
   return (
-    <>
+    <Provider store={store}>
       <RouterProvider router={router} />
-    </>
+    </Provider>
   );
 };
 
