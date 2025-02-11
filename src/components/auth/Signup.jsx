@@ -3,8 +3,12 @@ import {useCallback, useEffect, useState} from 'react';
 import styles from '../../pages/auth/SignupPage.module.scss';
 import {checkPasswordStrength, ValidationRules} from "../../utils/ValidationRules";
 import {debounce} from "lodash";
+import {useNavigate} from "react-router-dom";
+import {authApi} from "../../services/api.js";
 
 const Signup = () => {
+
+  const navigate = useNavigate();
 
   // 입력값들을 상태관리
   const [formData, setFormData] = useState({
@@ -36,7 +40,7 @@ const Signup = () => {
 
 
   // 입력값 검증을 수행하는 함수
-  const validateField = (fieldName, value) => {
+  const validateField = async (fieldName, value) => {
     let errorMessage = '';
 
     if (!value) {
@@ -45,13 +49,28 @@ const Signup = () => {
       errorMessage = ValidationRules[fieldName].message;
     }
 
+    // 중복 체크가 필요한 필드인 경우
+    if (!errorMessage && (fieldName === 'email' || fieldName === 'username')) {
+      try {
+        const response = await authApi.checkDuplicate(fieldName, value);
+        const { available, message } = response.data;
+
+        if (!available) {
+          errorMessage = message;
+        }
+      } catch (error) {
+        console.error('중복 체크 중 에러 발생:', error);
+        errorMessage = '중복 확인에 실패했습니다. 다시 시도해주세요.';
+      }
+    }
+
     return errorMessage;
   };
 
   // Debounce된 검증 함수 생성
   const debouncedValidateField = useCallback(
-    debounce((fieldName, value) => {
-      const errorMessage = validateField(fieldName, value);
+    debounce(async (fieldName, value) => {
+      const errorMessage = await validateField(fieldName, value);
 
       setErrors(prevErrors => ({
         ...prevErrors,
