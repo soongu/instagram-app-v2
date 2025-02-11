@@ -144,9 +144,41 @@ const Signup = () => {
   }, [formData, errors, passwordStrength]);
 
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: 회원가입 요청
+
+    try {
+      const response = await authApi.signup({
+        emailOrPhone: formData.email,
+        name: formData.name,
+        username: formData.username,
+        password: formData.password,
+      });
+
+      // 회원가입 성공시 처리
+      if (response.status === 200) {
+        // 로그인 페이지로 이동
+        navigate('/');
+      }
+    } catch (error) {
+      // 서버에서 에러 응답이 온 경우
+      if (error.response?.data) {
+        const { field, message } = error.response.data;
+        if (field) {
+          // 특정 필드에 대한 에러
+          setErrors(prev => ({
+            ...prev,
+            [field]: message
+          }));
+        } else {
+          // 일반적인 에러
+          alert(message || '회원가입에 실패했습니다.');
+        }
+      } else {
+        // 네트워크 에러 등의 경우
+        alert('서버와의 통신에 실패했습니다.');
+      }
+    }
   };
 
   return (

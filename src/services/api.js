@@ -13,10 +13,8 @@ const api = axios.create({
 // 인증 관련 API
 export const authApi = {
   // 이메일 중복 확인
-  checkDuplicate: (type, value) =>
-    api.get(`/auth/check-duplicate?type=${type}&value=${value}`),
+  checkDuplicate: (type, value) => api.get(`/auth/check-duplicate?type=${type}&value=${value}`),
 
   // 회원가입 요청
-  signup: (userData) =>
-    api.post('/auth/signup', userData),
+  signup: (userData) => api.post('/auth/signup', userData),
 };
