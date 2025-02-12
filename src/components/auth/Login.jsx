@@ -32,7 +32,7 @@ const Login = () => {
 
     try {
       const response = await authApi.login(formData);
-      dispatch(setToken(response.data.accessToken));
+      dispatch(setToken(response.data));
     } catch (error) {
       setError(error.response?.data?.message || '로그인에 실패했습니다.');
     } finally {

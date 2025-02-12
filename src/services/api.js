@@ -41,3 +41,22 @@ export const authApi = {
 export const feedApi = {
   getFeedPosts: (page) => api.get(`/posts?page=${page}`)
 };
+
+export const profileApi = {
+  // 프로필 헤더 정보 조회
+  getProfile: (username) =>
+    api.get(`/profiles/${username}`),
+
+  // 프로필 피드 목록 조회
+  getProfilePosts: (username) =>
+    api.get(`/profiles/${username}/posts`),
+
+  // 프로필 이미지 업데이트
+  updateProfileImage: (formData) =>
+    api.put('/profiles/profile-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }),
+
+};

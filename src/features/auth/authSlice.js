@@ -1,15 +1,22 @@
 // src/features/auth/authSlice.js
 import { createSlice } from '@reduxjs/toolkit';
+import defaultProfileImage from '../../assets/images/default-profile.svg';
 
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
     accessToken: localStorage.getItem('accessToken'),
+    username: '',
+    profileImage: defaultProfileImage
   },
   reducers: {
     setToken: (state, action) => {
-      state.accessToken = action.payload;
-      localStorage.setItem('accessToken', action.payload);
+      console.log(action.payload)
+      state.accessToken = action.payload.accessToken;
+      state.username = action.payload.username;
+      state.profileImage = action.payload.profileImage;
+
+      localStorage.setItem('accessToken', action.payload.accessToken);
     },
     clearToken: (state) => {
       state.accessToken = null;

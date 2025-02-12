@@ -15,8 +15,11 @@ import InstagramLogo from './InstagramLogo';
 import styles from './Sidebar.module.scss';
 import MorePopover from "./MorePopover.jsx";
 import {useEffect, useState} from "react";
+import {useSelector} from "react-redux";
 
 const Sidebar = () => {
+
+  const { profileImage, username } = useSelector(state => state.auth)
 
   const [showMoreMenu, setShowMoreMenu] = useState(false);
 
@@ -81,9 +84,9 @@ const Sidebar = () => {
           <span className={styles.menuText}>만들기</span>
         </button>
 
-        <NavLink to="/profile" className={styles.menuItem}>
+        <NavLink to={`/${username}`} className={styles.menuItem}>
           <div className={styles.profileImage}>
-            <img src={defaultProfileImage} alt="프로필"/>
+            <img src={profileImage} alt="프로필"/>
           </div>
           <span className={styles.menuText}>프로필</span>
         </NavLink>

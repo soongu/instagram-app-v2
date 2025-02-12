@@ -9,14 +9,17 @@ import {
   FaRegFlag
 } from 'react-icons/fa6';
 import styles from './Sidebar.module.scss';
+import {useNavigate} from "react-router-dom";
 
 const MorePopover = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
       await authApi.logout();
       dispatch(clearToken());
+      navigate('/');
     } catch (error) {
       console.error('로그아웃 실패:', error);
       dispatch(clearToken());
