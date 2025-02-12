@@ -11,7 +11,6 @@ const authSlice = createSlice({
   },
   reducers: {
     setToken: (state, action) => {
-      console.log(action.payload)
       state.accessToken = action.payload.accessToken;
       state.username = action.payload.username;
       state.profileImage = action.payload.profileImage;
@@ -20,6 +19,8 @@ const authSlice = createSlice({
     },
     clearToken: (state) => {
       state.accessToken = null;
+      state.username = '';
+      state.profileImage = defaultProfileImage;
       localStorage.removeItem('accessToken');
     },
   },
