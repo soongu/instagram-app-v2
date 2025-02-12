@@ -4,6 +4,7 @@ import {FaFacebookSquare} from "react-icons/fa";
 import Separator from "../../components/auth/Separator";
 import AppDownload from "../../components/auth/AppDownload";
 import Signup from "../../components/auth/Signup";
+import {Link} from "react-router-dom";
 
 const SignupPage = () => {
   return (
@@ -22,7 +23,7 @@ const SignupPage = () => {
       </AuthCard>
 
       <AuthCard className={styles.loginCard}>
-        <p>계정이 있으신가요? <a href="/">로그인</a></p>
+        <p>계정이 있으신가요? <Link to="/">로그인</Link></p>
       </AuthCard>
 
       <AppDownload />

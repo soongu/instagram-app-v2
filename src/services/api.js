@@ -32,6 +32,7 @@ export const authApi = {
 
   // 로그인 요청
   login: (credentials) => api.post('/auth/login', credentials),
+
   // 로그아웃 요청
   logout: () => api.post('/auth/logout'),
 };
