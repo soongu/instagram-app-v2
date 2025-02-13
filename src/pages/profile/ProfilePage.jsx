@@ -1,9 +1,9 @@
 // pages/ProfilePage.jsx
 import { useLoaderData } from 'react-router-dom';
 import styles from './ProfilePage.module.scss';
-import defaultProfileImage from '../../assets/images/default-profile.svg';
 import {useIsMyProfile} from "../../hooks/useIsMyProfile.js";
 import {FaGear} from "react-icons/fa6";
+import ProfileImage from "../../components/profile/ProfileImage.jsx";
 
 const ProfilePage = () => {
   // loader에서 불러온 프로필 데이터
@@ -43,14 +43,11 @@ const ProfilePage = () => {
       {/* 프로필 헤더 */}
       <header className={styles.profileHeader}>
         {/* 프로필 이미지 영역 */}
-        <div className={styles.profileImageContainer}>
-          <div className={styles.profileImage}>
-            <img
-              src={profileData.profileImageUrl || defaultProfileImage}
-              alt={`${profileData.username}의 프로필`}
-            />
-          </div>
-        </div>
+        <ProfileImage
+          imageUrl={profileData.profileImageUrl}
+          username={profileData.username}
+          editable={isMyProfile}
+        />
 
         {/* 프로필 정보 영역 */}
         <div className={styles.profileInfo}>

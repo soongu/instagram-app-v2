@@ -19,7 +19,8 @@ import {useSelector} from "react-redux";
 
 const Sidebar = () => {
 
-  const { profileImage, username } = useSelector(state => state.auth)
+  const storedUser = useSelector(state => state.auth.user);
+
 
   const [showMoreMenu, setShowMoreMenu] = useState(false);
 
@@ -84,9 +85,9 @@ const Sidebar = () => {
           <span className={styles.menuText}>만들기</span>
         </button>
 
-        <NavLink to={`/${username}`} className={styles.menuItem}>
+        <NavLink to={`/${storedUser?.username}`} className={styles.menuItem}>
           <div className={styles.profileImage}>
-            <img src={profileImage} alt="프로필"/>
+            <img src={storedUser?.profileImage || defaultProfileImage} alt="프로필"/>
           </div>
           <span className={styles.menuText}>프로필</span>
         </NavLink>

@@ -3,7 +3,7 @@
 import './styles/global.scss';
 import {Provider} from "react-redux";
 import {store} from "./store/index";
-import AppRoutes from "./routes/AppRoutes.jsx";
+import AppContent from "./AppContent.jsx";
 
 
 
@@ -11,7 +11,7 @@ const App = () => {
 
   return (
     <Provider store={store}>
-      <AppRoutes />
+      <AppContent />
     </Provider>
   );
 };

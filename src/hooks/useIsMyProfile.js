@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 
 export const useIsMyProfile = () => {
   const { username: pageUsername } = useParams();
-  const storedUsername = useSelector(state => state.auth.username);
+  const storedUser = useSelector(state => state.auth.user);
 
-  return storedUsername === pageUsername;
+  return storedUser.username === pageUsername;
 };
