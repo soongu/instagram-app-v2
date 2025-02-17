@@ -1,3 +1,5 @@
+// src/pages/auth/SignupPage.jsx
+
 import AuthCard from "../../components/auth/AuthCard";
 import styles from './SignupPage.module.scss';
 import {FaFacebookSquare} from "react-icons/fa";

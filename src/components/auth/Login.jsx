@@ -1,7 +1,7 @@
 // src/components/auth/Login.jsx
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { setToken } from '../../features/auth/authSlice';
+import { setToken } from '../../store/authSlice.js';
 import { authApi } from '../../services/api';
 import styles from "../../pages/auth/LoginPage.module.scss";
 

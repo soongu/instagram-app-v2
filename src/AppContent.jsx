@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { authApi } from './services/api';
-import { clearToken, setUser } from './features/auth/authSlice';
+import { clearToken, setUser } from './store/authSlice.js';
 import AppRoutes from './routes/AppRoutes';
 
 const AppContent = () => {

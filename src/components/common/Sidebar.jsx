@@ -1,3 +1,5 @@
+// src/components/common/Sidebar.jsx
+
 import {Link, NavLink} from 'react-router-dom';
 import defaultProfileImage from '../../assets/images/default-profile.svg';
 import {

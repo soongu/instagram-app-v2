@@ -1,3 +1,5 @@
+// src/pages/auth/AuthPage.jsx
+
 import {useSelector} from "react-redux";
 import LoginPage from "./LoginPage.jsx";
 import FeedPage from "../feed/FeedPage.jsx";

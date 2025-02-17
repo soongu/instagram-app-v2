@@ -1,4 +1,4 @@
-// src/components/feed/FeedPage.jsx
+// src/pages/feed/FeedPage.jsx
 import styles from './FeedPage.module.scss';
 import FeedList from "../../components/feed/FeedList.jsx";
 import Stories from "../../components/feed/Stories.jsx";

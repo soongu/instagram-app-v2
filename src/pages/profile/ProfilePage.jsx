@@ -1,4 +1,4 @@
-// pages/ProfilePage.jsx
+// src/pages/ProfilePage.jsx
 import { useLoaderData } from 'react-router-dom';
 import styles from './ProfilePage.module.scss';
 import {useIsMyProfile} from "../../hooks/useIsMyProfile.js";

@@ -1,7 +1,9 @@
+// src/routes/AppRoutes.jsx
+
 import {createBrowserRouter, Navigate, RouterProvider} from "react-router-dom";
 import AuthLayout from "../layouts/AuthLayout.jsx";
 import SignupPage from "../pages/auth/SignupPage.jsx";
-import AuthRequired from "./AuthRequred.jsx";
+import AuthRequired from "./AuthRequired.jsx";
 import AuthPage from "../pages/auth/AuthPage.jsx";
 import ProfilePage from "../pages/profile/ProfilePage.jsx";
 import {profileApi} from "../services/api.js";

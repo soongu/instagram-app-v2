@@ -1,4 +1,4 @@
-// ValidationRules.js
+// src/utils/ValidationRules.js
 export const ValidationRules = {
   email: {
     pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,

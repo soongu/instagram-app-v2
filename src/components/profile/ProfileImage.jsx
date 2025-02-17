@@ -1,9 +1,10 @@
 // components/profile/ProfileImage.jsx
+
 import {useRef} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import styles from './ProfileImage.module.scss';
 import defaultProfileImage from '../../assets/images/default-profile.svg';
-import {updateProfileImage} from "../../features/auth/authSlice.js";
+import {updateProfileImage} from "../../store/authSlice.js";
 import {profileApi} from "../../services/api.js";
 
 const ProfileImage = ({imageUrl, username, editable}) => {

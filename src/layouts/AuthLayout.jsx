@@ -1,3 +1,5 @@
+// src/layouts/AuthLayout.jsx
+
 import { Outlet } from 'react-router-dom';
 import styles from './AuthLayout.module.scss';
 import PhoneImage from "../assets/images/auth/phones.png";

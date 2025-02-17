@@ -1,4 +1,4 @@
-// src/components/feed/Stories/StoryItem.jsx
+// src/components/feed/StoryItem.jsx
 import styles from './Stories.module.scss';
 
 const StoryItem = ({ username, profileImage }) => {

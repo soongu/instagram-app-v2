@@ -1,5 +1,7 @@
+// src/components/common/MorePopover.jsx
+
 import { useDispatch } from 'react-redux';
-import { clearToken } from '../../features/auth/authSlice';
+import { clearToken } from '../../store/authSlice.js';
 import { authApi } from '../../services/api.js';
 import {
   FaGear,

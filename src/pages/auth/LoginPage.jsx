@@ -1,3 +1,5 @@
+// src/pages/auth/LoginPage.jsx
+
 import styles from './LoginPage.module.scss';
 import AuthCard from "../../components/auth/AuthCard";
 import {Link} from "react-router-dom";

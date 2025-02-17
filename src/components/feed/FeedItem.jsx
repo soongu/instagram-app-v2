@@ -1,4 +1,4 @@
-// src/components/feed/FeedList/FeedItem.jsx
+// src/components/feed/FeedItem.jsx
 import { useState } from 'react';
 import {
   FaEllipsis,

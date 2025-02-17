@@ -1,3 +1,5 @@
+// src/routes/AuthRequired.jsx
+
 // AuthRequired 컴포넌트
 import RootLayout from "../layouts/RootLayout.jsx";
 import AuthLayout from "../layouts/AuthLayout.jsx";

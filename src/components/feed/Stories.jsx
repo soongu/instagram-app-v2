@@ -1,4 +1,4 @@
-// src/components/feed/Stories/Stories.jsx
+// src/components/feed/Stories.jsx
 import {useRef, useState} from 'react';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa6';
 import styles from './Stories.module.scss';
