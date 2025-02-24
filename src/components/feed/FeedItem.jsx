@@ -12,8 +12,11 @@ import Carousel from "../common/Carousel/Carousel.jsx";
 import defaultProfileImage from '../../assets/images/default-profile.svg';
 import {convertHashtagsToJsx, formatDate} from "../../utils/formatter.jsx";
 import {Link} from "react-router-dom";
+import {usePostModal} from "../../hooks/usePostModal.js";
 
 const FeedItem = ({ post }) => {
+  const { openModal } = usePostModal();
+
   // 더보기 기능을 위한 상태
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -93,7 +96,7 @@ const FeedItem = ({ post }) => {
             <button className={styles.actionButton}>
               <FaRegHeart />
             </button>
-            <button className={styles.actionButton}>
+            <button className={styles.actionButton} onClick={() => openModal(post.feed_id)}>
               <FaRegComment />
             </button>
             <button className={styles.actionButton}>

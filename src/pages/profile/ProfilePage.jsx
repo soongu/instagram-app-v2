@@ -4,6 +4,7 @@ import styles from './ProfilePage.module.scss';
 import {useIsMyProfile} from "../../hooks/useIsMyProfile.js";
 import {FaGear} from "react-icons/fa6";
 import ProfileImage from "../../components/profile/ProfileImage.jsx";
+import ProfileFeed from "../../components/profile/ProfileFeed.jsx";
 
 const ProfilePage = () => {
   // loader에서 불러온 프로필 데이터
@@ -77,7 +78,8 @@ const ProfilePage = () => {
         </div>
       </header>
 
-      {/* 피드 그리드 - 우선 비워둠 */}
+      {/* 게시물 목록 */}
+      <ProfileFeed username={profileData.username} />
     </main>
   );
 };

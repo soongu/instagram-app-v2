@@ -63,3 +63,14 @@ export const profileApi = {
     }),
 
 };
+
+export const postApi = {
+  // 특정 사용자의 게시물 목록 가져오기 (프로필 페이지)
+  getProfilePosts: (username) => api.get(`/profiles/${username}/posts`),
+
+  // 특정 해시태그의 게시물 목록 가져오기 (해시태그 검색 페이지)
+  getPostsByHashtag: (hashtag) => api.get(`/hashtags/${hashtag}/posts`),
+
+  // 개별 게시물 상세 정보 가져오기 (모달용)
+  getPost: (postId) => api.get(`/posts/${postId}`)
+};
