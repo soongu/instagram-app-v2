@@ -1,18 +1,27 @@
 // src/components/posts/PostDetailModal.jsx
 import { useEffect, useState } from 'react';
 import { usePostModal } from '../../../hooks/usePostModal';
-import { postApi } from '../../../services/api';
+import {likeApi, postApi} from '../../../services/api';
 import styles from './PostDetailModal.module.scss';
 import { FaTimes } from "react-icons/fa";
 import Carousel from '../../common/Carousel/Carousel';
 import PostHeader from './PostHeader';
 import PostComments from './PostComments';
 import PostActions from './PostActions';
+import {useDispatch} from "react-redux";
+import {updateLikeStatus} from "../../../store/likeSlice.js";
 
 const PostDetailModal = () => {
   const { isOpen, postId, closeModal } = usePostModal();
   const [post, setPost] = useState(null);
   const [newComment, setNewComment] = useState("");
+
+  const dispatch = useDispatch();
+
+  const handleDblClick = async () => {
+    const { data } = await likeApi.toggleLike(postId);
+    dispatch(updateLikeStatus({ postId, ...data }));
+  };
 
   useEffect(() => {
     if (isOpen && postId) {
@@ -30,6 +39,8 @@ const PostDetailModal = () => {
 
   if (!isOpen || !post) return null;
 
+
+
   return (
     <div className={styles.modalOverlay}>
       <div className={styles.modalBackdrop} onClick={closeModal}></div>
@@ -39,7 +50,7 @@ const PostDetailModal = () => {
 
       <div className={styles.modalContent}>
         <div className={styles.modalCarouselContainer}>
-          <Carousel items={post.images} type="image" />
+          <Carousel items={post.images} type="image" onImageDoubleClick={handleDblClick} />
         </div>
 
         <div className={styles.modalSidebar}>

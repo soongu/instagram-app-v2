@@ -1,10 +1,13 @@
 // src/components/common/Carousel/Carousel.jsx
 import { useCallback, useState } from 'react';
-import { FaChevronLeft, FaChevronRight } from 'react-icons/fa6';
+import {FaChevronLeft, FaChevronRight, FaHeart} from 'react-icons/fa6';
 import styles from './Carousel.module.scss';
 
 const Carousel = ({ items, type = 'image', onImageDoubleClick }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  // 더블클릭 애니메이션
+  const [showHeart, setShowHeart] = useState(false);
 
   const goToSlide = useCallback((index) => {
     if (index < 0 || index >= items.length) return;
@@ -14,8 +17,12 @@ const Carousel = ({ items, type = 'image', onImageDoubleClick }) => {
   // 이미지 더블클릭 핸들러
   const handleDoubleClick = useCallback((e) => {
     if (onImageDoubleClick) {
-      onImageDoubleClick(e);
+      onImageDoubleClick(e); // 좋아요 토글실행
     }
+
+    setShowHeart(true); // ✅ 하트 애니메이션 활성화
+    setTimeout(() => setShowHeart(false), 800); // 0.8초 후 하트 숨김
+
   }, [onImageDoubleClick]);
 
   if (!items?.length) return null;
@@ -45,6 +52,7 @@ const Carousel = ({ items, type = 'image', onImageDoubleClick }) => {
                 alt={`preview ${index + 1}`}
               />
             )}
+            {showHeart && <FaHeart className={styles.doubleClickHeart} />}
           </div>
         ))}
       </div>

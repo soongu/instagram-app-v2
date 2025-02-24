@@ -69,3 +69,41 @@
     background: white;
   }
 }
+
+// src/components/common/Carousel/Carousel.module.scss
+
+.doubleClickHeart {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.1);
+  z-index: 10;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 100px;
+  animation: heartPop 0.8s ease-out;
+  pointer-events: none;
+}
+
+@keyframes heartPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.1);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  30% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  45% {
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  60% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
