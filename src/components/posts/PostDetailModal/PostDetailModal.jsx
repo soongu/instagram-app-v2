@@ -52,7 +52,7 @@ const PostDetailModal = () => {
             newComment={newComment}
             setNewComment={setNewComment}
           />
-          <PostActions likeStatus={post.likeStatus} />
+          <PostActions postId={postId} likeStatus={post.likeStatus} />
           {/* 댓글 입력창 */}
           <form className={styles.commentForm}>
             <input

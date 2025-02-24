@@ -3,7 +3,7 @@ import {useEffect, useRef, useState} from 'react';
 import {FaSpinner} from 'react-icons/fa6';
 import styles from './FeedList.module.scss';
 import {feedApi} from "../../services/api.js";
-import FeedItem from "./FeedItem.jsx";
+import FeedItem from "./FeedItem/FeedItem.jsx";
 
 const FeedList = () => {
   const [posts, setPosts] = useState([]);

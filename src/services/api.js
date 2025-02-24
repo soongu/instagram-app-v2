@@ -74,3 +74,10 @@ export const postApi = {
   // 개별 게시물 상세 정보 가져오기 (모달용)
   getPost: (postId) => api.get(`/posts/${postId}`)
 };
+
+// ✅ 좋아요 관련 API 추가
+export const likeApi = {
+  // 특정 게시물 좋아요 토글
+  toggleLike: (feedId) => api.post(`/posts/${feedId}/likes`),
+
+};

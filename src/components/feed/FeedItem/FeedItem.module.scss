@@ -140,9 +140,65 @@
     color: #262626;
   }
 }
-
+.liked {
+  color: #F00;
+}
 .time {
   color: #8e8e8e;
   font-size: 12px;
   margin: 8px 0;
+}
+
+/* ✅ "댓글 N개 보기" 버튼 */
+.postComments {
+  padding: 0 16px;
+}
+
+.commentSection {
+  margin-top: 8px;
+}
+
+.viewCommentsButton {
+  background: none;
+  border: none;
+  color: #8e8e8e;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  display: inline-block;
+
+  &:hover {
+    color: #262626;
+  }
+}
+
+/* ✅ 댓글 입력 폼 */
+.commentForm {
+  display: flex;
+  align-items: center;
+  padding: 8px 0px;
+  background: #fff;
+
+  .commentInput {
+    flex: 1;
+    border: none;
+    font-size: 14px;
+    resize: none;
+    outline: none;
+    background: transparent;
+  }
+
+  .commentSubmit {
+    border: none;
+    background: none;
+    color: #0095f6;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0 8px;
+
+    &:disabled {
+      color: #b2dffc;
+      cursor: not-allowed;
+    }
+  }
 }
