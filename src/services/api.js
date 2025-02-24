@@ -81,3 +81,8 @@ export const likeApi = {
   toggleLike: (feedId) => api.post(`/posts/${feedId}/likes`),
 
 };
+
+// 댓글 관련 API
+export const commentApi = {
+  addComment: (feedId, payload) => api.post(`/posts/${feedId}/comments`, payload),
+};

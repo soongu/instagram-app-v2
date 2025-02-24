@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import styles from './PostDetailModal.module.scss';
 import { formatDate, convertHashtagsToJsx } from "../../../utils/formatter.jsx";
 
-const PostComments = ({ comments, postUser, postContent, postCreatedAt, newComment, setNewComment }) => {
+const PostComments = ({ comments, postUser, postContent, postCreatedAt }) => {
   const navigate = useNavigate();
 
   const handleUserClick = (username) => {

@@ -1,0 +1,30 @@
+/* ✅ 댓글 입력 폼 */
+.commentForm {
+  display: flex;
+  align-items: center;
+  padding: 8px 0px;
+  background: #fff;
+
+  .commentInput {
+    flex: 1;
+    border: none;
+    font-size: 14px;
+    resize: none;
+    outline: none;
+    background: transparent;
+  }
+
+  .commentSubmit {
+    border: none;
+    background: none;
+    color: #0095f6;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0 8px;
+
+    &:disabled {
+      color: #b2dffc;
+      cursor: not-allowed;
+    }
+  }
+}

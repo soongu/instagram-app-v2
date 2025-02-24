@@ -10,17 +10,25 @@ import PostComments from './PostComments';
 import PostActions from './PostActions';
 import {useDispatch} from "react-redux";
 import {updateLikeStatus} from "../../../store/likeSlice.js";
+import CommentForm from "../../common/Comment/CommentForm.jsx";
 
 const PostDetailModal = () => {
   const { isOpen, postId, closeModal } = usePostModal();
   const [post, setPost] = useState(null);
-  const [newComment, setNewComment] = useState("");
 
   const dispatch = useDispatch();
 
   const handleDblClick = async () => {
     const { data } = await likeApi.toggleLike(postId);
     dispatch(updateLikeStatus({ postId, ...data }));
+  };
+
+  // 기존 댓글에 추가 댓글 렌더링
+  const addComment = (newComment) => {
+    setPost(prev => ({
+      ...prev,
+      comments: [...prev.comments, newComment]
+    }));
   };
 
   useEffect(() => {
@@ -60,23 +68,12 @@ const PostDetailModal = () => {
             postUser={post.user}
             postContent={post.content}
             postCreatedAt={post.createdAt}
-            newComment={newComment}
-            setNewComment={setNewComment}
           />
           <PostActions postId={postId} likeStatus={post.likeStatus} />
           {/* 댓글 입력창 */}
-          <form className={styles.commentForm}>
-            <input
-              type="text"
-              placeholder="댓글 달기..."
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              className={styles.commentInput}
-            />
-            <button type="submit" className={styles.commentSubmit} disabled={!newComment.trim()}>
-              게시
-            </button>
-          </form>
+          <div className={styles.comment}>
+            <CommentForm feedId={postId} onCommentAdded={addComment} />
+          </div>
         </div>
       </div>
     </div>

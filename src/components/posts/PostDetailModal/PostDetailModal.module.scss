@@ -270,36 +270,11 @@
 }
 
 // 댓글 입력 폼
-.commentForm {
-  display: flex;
-  align-items: center;
+.comment {
+  width: 100%;
   border-top: 1px solid #dbdbdb;
   padding: 8px 16px;
-
-  .commentInput {
-    flex: 1;
-    border: none;
-    font-size: 14px;
-    padding: 8px;
-    resize: none;
-    outline: none;
-  }
-
-  .commentSubmit {
-    border: none;
-    background: none;
-    color: #0095f6;
-    font-weight: bold;
-    cursor: pointer;
-    padding: 0 8px;
-
-    &:disabled {
-      color: #b2dffc;
-      cursor: not-allowed;
-    }
-  }
 }
-
 
 .liked {
   color: #f00;

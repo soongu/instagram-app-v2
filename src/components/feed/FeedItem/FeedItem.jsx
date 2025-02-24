@@ -6,10 +6,10 @@ import FeedItemHeader from "./FeedItemHeader";
 import FeedItemContent from "./FeedItemContent";
 import FeedItemActions from "./FeedItemActions";
 import FeedItemComments from "./FeedItemComments";
-import FeedItemCommentForm from "./FeedItemCommentForm";
 import {likeApi} from "../../../services/api.js";
 import {useDispatch} from "react-redux";
 import {updateLikeStatus} from "../../../store/likeSlice.js";
+import CommentForm from "../../common/Comment/CommentForm.jsx";
 
 const FeedItem = ({ post }) => {
   const { openModal } = usePostModal();
@@ -38,7 +38,7 @@ const FeedItem = ({ post }) => {
       <div className={styles.postComments}>
         <FeedItemComments commentCount={post.commentCount} openModal={openModal} postId={post.feed_id} />
 
-        <FeedItemCommentForm />
+        <CommentForm feedId={post.feed_id} />
       </div>
     </article>
   );

@@ -8,6 +8,9 @@ const PostGridItem = ({ post }) => {
   const { openModal } = usePostModal();
 
   const reduxLikeState = useSelector(state => state.likes.likes[post.id]);
+  const commentCountState = useSelector(state => state.comments.commentCounts[post.id]);
+
+  const commentCount = commentCountState || post.commentCount;
   const likeCount = reduxLikeState ? reduxLikeState.likeCount : post.likeCount;
 
   return (
@@ -18,7 +21,7 @@ const PostGridItem = ({ post }) => {
           <FaHeart /> {likeCount}
         </span>
         <span>
-          <FaComment /> {post.commentCount}
+          <FaComment /> {commentCount}
         </span>
       </div>
     </div>
