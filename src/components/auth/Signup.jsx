@@ -43,16 +43,27 @@ const Signup = () => {
   const validateField = async (fieldName, value) => {
     let errorMessage = '';
 
+    // email 필드는 emailOrPhone 검증 룰을 사용합니다.
+    const ruleName = fieldName === 'email' ? 'emailOrPhone' : fieldName;
+
     if (!value) {
-      errorMessage = ValidationRules[fieldName].requiredMessage;
-    } else if (ValidationRules[fieldName].pattern && !ValidationRules[fieldName].pattern.test(value)) {
-      errorMessage = ValidationRules[fieldName].message;
+      errorMessage = ValidationRules[ruleName].requiredMessage;
+    } else if (ValidationRules[ruleName].pattern && !ValidationRules[ruleName].pattern.test(value)) {
+      errorMessage = ValidationRules[ruleName].message;
     }
 
     // 중복 체크가 필요한 필드인 경우
     if (!errorMessage && (fieldName === 'email' || fieldName === 'username')) {
       try {
-        const response = await authApi.checkDuplicate(fieldName, value);
+        let checkType = fieldName;
+        // 이메일 필드에서 전화번호 패턴일 경우 type을 'phone'으로 설정
+        if (fieldName === 'email' && /^010-\d{4}-\d{4}$/.test(value)) {
+          checkType = 'phone';
+        }
+        
+        // 전화번호인 경우 하이픈 제거 후 전송 (이메일은 영향 없음)
+        const sendValue = fieldName === 'email' ? value.replace(/-/g, '') : value;
+        const response = await authApi.checkDuplicate(checkType, sendValue);
         const { available, message } = response.data;
 
         if (!available) {
@@ -149,17 +160,15 @@ const Signup = () => {
 
     try {
       const response = await authApi.signup({
-        emailOrPhone: formData.email,
+        emailOrPhone: formData.email.replace(/-/g, ''), // 전화번호인 경우 하이픈 제거
         name: formData.name,
         username: formData.username,
         password: formData.password,
       });
 
       // 회원가입 성공시 처리
-      if (response.status === 200) {
-        // 로그인 페이지로 이동
-        navigate('/');
-      }
+      // API 응답이 성공(200 OK 또는 201 Created 등)이면 예외가 발생하지 않으므로 로그인 페이지로 이동합니다.
+      navigate('/');
     } catch (error) {
       // 서버에서 에러 응답이 온 경우
       if (error.response?.data) {
@@ -183,43 +192,55 @@ const Signup = () => {
 
   return (
     <form className={styles.authForm} onSubmit={handleSubmit} noValidate>
-      <div className={styles.formField}>
-        <input
-          type="email"
-          name="email"
-          placeholder="휴대폰 번호 또는 이메일 주소"
-          required
-          value={formData.email}
-          onChange={handleChange}
-        />
+      <div className={`${styles.formField} ${errors.email ? styles.error : formData.email && !errors.email ? styles.success : ''}`}>
+        <div className={styles.inputContainer}>
+          <input
+            type="email"
+            name="email"
+            placeholder="휴대폰 번호 또는 이메일 주소"
+            required
+            value={formData.email}
+            onChange={handleChange}
+          />
+          {formData.email && !errors.email && <div className={styles.successIcon}></div>}
+          {errors.email && <div className={styles.errorIcon}></div>}
+        </div>
         {errors.email && <span className={styles.errorMessage}>{errors.email}</span>}
       </div>
 
-      <div className={styles.formField}>
-        <input
-          type="text"
-          name="name"
-          placeholder="성명"
-          required
-          value={formData.name}
-          onChange={handleChange}
-        />
+      <div className={`${styles.formField} ${errors.name ? styles.error : formData.name && !errors.name ? styles.success : ''}`}>
+        <div className={styles.inputContainer}>
+          <input
+            type="text"
+            name="name"
+            placeholder="성명"
+            required
+            value={formData.name}
+            onChange={handleChange}
+          />
+          {formData.name && !errors.name && <div className={styles.successIcon}></div>}
+          {errors.name && <div className={styles.errorIcon}></div>}
+        </div>
         {errors.name && <span className={styles.errorMessage}>{errors.name}</span>}
       </div>
 
-      <div className={styles.formField}>
-        <input
-          type="text"
-          name="username"
-          placeholder="사용자 이름"
-          required
-          value={formData.username}
-          onChange={handleChange}
-        />
+      <div className={`${styles.formField} ${errors.username ? styles.error : formData.username && !errors.username ? styles.success : ''}`}>
+        <div className={styles.inputContainer}>
+          <input
+            type="text"
+            name="username"
+            placeholder="사용자 이름"
+            required
+            value={formData.username}
+            onChange={handleChange}
+          />
+          {formData.username && !errors.username && <div className={styles.successIcon}></div>}
+          {errors.username && <div className={styles.errorIcon}></div>}
+        </div>
         {errors.username && <span className={styles.errorMessage}>{errors.username}</span>}
       </div>
 
-      <div className={styles.formField}>
+      <div className={`${styles.formField} ${errors.password || (formData.password && passwordStrength.type === 'weak') ? styles.error : formData.password && !errors.password && passwordStrength.type !== 'weak' ? styles.success : ''}`}>
         <div className={styles.inputContainer}>
           <input
             type={showPassword ? 'text' : 'password'}
@@ -228,15 +249,24 @@ const Signup = () => {
             required
             value={formData.password}
             onChange={handleChange}
+            style={formData.password ? { paddingRight: '100px' } : {}}
           />
+
+          {formData.password && !errors.password && passwordStrength.type !== 'weak' && (
+             <div className={styles.successIcon}></div>
+          )}
+          {(errors.password || (formData.password && passwordStrength.type === 'weak')) && (
+             <div className={styles.errorIcon}></div>
+          )}
 
           {formData.password && (
             <button
               type="button"
               className={styles.passwordToggle}
               onClick={togglePasswordVisibility}
+              style={{ right: '32px' }} // 아이콘 폭 확보용 추가 간격
             >
-              {showPassword ? '숨기기' : '패스워드 표시'}
+              {showPassword ? '숨기기' : '비밀번호 표시'}
             </button>
           )}
 

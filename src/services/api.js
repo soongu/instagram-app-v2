@@ -22,6 +22,35 @@ api.interceptors.request.use(
   }
 );
 
+// 응답 인터셉터 추가
+api.interceptors.response.use(
+  (response) => {
+    // ApiResponse<T> 형식인지 확인
+    if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+      if (response.data.success) {
+        response.data = response.data.data;
+      } else {
+        // HTTP 200 OK 이지만 비즈니스 로직 실패인 경우
+        const error = new Error(response.data.error?.message || '요청 처리에 실패했습니다.');
+        error.response = {
+          data: response.data.error,
+          status: response.data.error?.status || response.status
+        };
+        return Promise.reject(error);
+      }
+    }
+    return response;
+  },
+  (error) => {
+    // HTTP 상태 코드가 4xx, 5xx 에러인 경우
+    if (error.response?.data && typeof error.response.data === 'object' && 'success' in error.response.data) {
+      // 기존 컴포넌트 에러 처리(error.response.data.message 등)와 호환되도록 에러 데이터 구조 평탄화
+      error.response.data = error.response.data.error || error.response.data;
+    }
+    return Promise.reject(error);
+  }
+);
+
 // 인증 관련 API
 export const authApi = {
   // 이메일 중복 확인
@@ -75,7 +104,7 @@ export const postApi = {
   getPost: (postId) => api.get(`/posts/${postId}`)
 };
 
-// ✅ 좋아요 관련 API 추가
+// 좋아요 관련 API 추가
 export const likeApi = {
   // 특정 게시물 좋아요 토글
   toggleLike: (feedId) => api.post(`/posts/${feedId}/likes`),

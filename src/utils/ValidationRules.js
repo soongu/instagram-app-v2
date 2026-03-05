@@ -1,5 +1,10 @@
 // src/utils/ValidationRules.js
 export const ValidationRules = {
+  emailOrPhone: {
+    pattern: /^([^\s@]+@[^\s@]+\.[^\s@]+|010-\d{4}-\d{4})$/,
+    message: '올바른 이메일 또는 전화번호 형식이 아닙니다.',
+    requiredMessage: '이메일 또는 전화번호를 입력해주세요.',
+  },
   email: {
     pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
     message: '올바른 이메일 형식이 아닙니다.',
