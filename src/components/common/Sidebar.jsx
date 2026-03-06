@@ -19,7 +19,7 @@ import MorePopover from "./MorePopover.jsx";
 import {useEffect, useState} from "react";
 import {useSelector, useDispatch} from "react-redux";
 import { openCreateFeedModal } from '../../store/createFeedModalSlice';
-import CreateFeedModal from '../feed/CreateFeedModal';
+import CreateFeedModal from '../feed/CreateFeedModal/index';
 
 const Sidebar = () => {
 
