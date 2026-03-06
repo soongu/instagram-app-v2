@@ -21,8 +21,8 @@ const FeedList = () => {
 
       try {
         const response = await feedApi.getFeedPosts(page);
-        setPosts(prev => [...prev, ...response.data.feedList]);
-        setHasNext(response.data.hasNext);
+        setPosts(prev => [...prev, ...response.feedList]);
+        setHasNext(response.hasNext);
       } catch (error) {
         console.error('Failed to fetch posts:', error);
       } finally {

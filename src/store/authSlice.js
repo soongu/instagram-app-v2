@@ -4,7 +4,7 @@ import { createSlice } from '@reduxjs/toolkit';
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    accessToken: localStorage.getItem('accessToken'),
+    accessToken: null,
     user: null
   },
   reducers: {
@@ -15,12 +15,12 @@ const authSlice = createSlice({
         username: action.payload.username,
         profileImage: action.payload.profileImage
       };
-      localStorage.setItem('accessToken', action.payload.accessToken);
+      localStorage.setItem('isLoggedIn', 'true');
     },
     clearToken: (state) => {
       state.accessToken = null;
       state.user = null;
-      localStorage.removeItem('accessToken');
+      localStorage.removeItem('isLoggedIn');
     },
     // 프로필 이미지만 변경하는 액션 추가
     updateProfileImage: (state, action) => {
@@ -31,8 +31,11 @@ const authSlice = createSlice({
     setUser: (state, action) => {
       state.user = action.payload;
     },
+    refreshAccessToken: (state, action) => {
+      state.accessToken = action.payload;
+    },
   },
 });
 
-export const { setToken, clearToken, updateProfileImage, setUser } = authSlice.actions;
+export const { setToken, clearToken, updateProfileImage, setUser, refreshAccessToken } = authSlice.actions;
 export default authSlice.reducer;

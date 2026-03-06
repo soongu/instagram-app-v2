@@ -1,29 +1,42 @@
 // src/AppContent.jsx
-import { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useEffect, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { authApi } from './services/api';
-import { clearToken, setUser } from './store/authSlice.js';
+import { clearToken, setUser, refreshAccessToken } from './store/authSlice.js';
 import AppRoutes from './routes/AppRoutes';
 
 const AppContent = () => {
   const dispatch = useDispatch();
-  const accessToken = useSelector(state => state.auth.accessToken);
+  const [isInit, setIsInit] = useState(false);
 
   useEffect(() => {
-    console.log('useEffect in AppContent');
-    const fetchUser = async () => {
-      if (accessToken) {
+    const initAuth = async () => {
+      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+      if (isLoggedIn) {
+        // 이미 로그인 이력이 있는 경우(새로고침 등), Silent Refresh 시도
         try {
-          const response = await authApi.getCurrentUser();
-          dispatch(setUser(response.data));
+          console.log('[App 초기화] 기존 로그인 유저, Silent Refresh 시도...');
+          const response = await authApi.reissue();
+          console.log('[App 초기화] Silent Refresh 성공:', response.accessToken);
+          dispatch(refreshAccessToken(response.accessToken));
         } catch (error) {
+          console.log('[App 초기화] Silent Refresh 실패 (로그인 만료)');
           dispatch(clearToken());
         }
+      } else {
+        // 로그인 이력이 없으면 아무것도 하지 않고 초기화 완료
+        console.log('[App 초기화] 첫 방문 혹은 로그인 이력 없음, 패스...');
       }
+      setIsInit(true);
     };
 
-    fetchUser();
-  }, [accessToken]);
+    initAuth();
+  }, [dispatch]);
+
+  // isInit 이 완료되기 전에는 라우트를 렌더링하지 않아 root 컴포넌트의 잦은 리렌더링과 화면 깜빡임, 스크롤 튀는 현상 방지
+  if (!isInit) {
+    return null;
+  }
 
   return <AppRoutes />;
 };

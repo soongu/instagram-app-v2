@@ -1,6 +1,7 @@
 // src/services/api.js
 import axios from 'axios';
 import {store} from "../store/index";
+import { refreshAccessToken, clearToken } from '../store/authSlice';
 
 
 // axios 인스턴스 생성
@@ -39,9 +40,33 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
     }
-    return response;
+    return response.data;
   },
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+    // HTTP 401 에러(토큰 만료 등)이고 재시도한 적이 없으며, reissue 요청이 아닌 경우에만 재발급 시도
+    if (error.response?.status === 401 && !originalRequest._retry && originalRequest.url !== '/auth/reissue') {
+      originalRequest._retry = true;
+      try {
+        console.log('[Axios Interceptor] Access Token 만료 감지, 재발급 갱신 시도...');
+        const response = await authApi.reissue();
+        // 앞선 응답 인터셉터 처리를 통해 이미 response = { accessToken: "..." } 형태입니다.
+        const newAccessToken = response.accessToken;
+        
+        console.log('[Axios Interceptor] 토큰 갱신 성공:', newAccessToken);
+        // Redux 스토어에 새 토큰 저장
+        store.dispatch(refreshAccessToken(newAccessToken));
+        
+        // 원래 요청 헤더 갱신 후 재요청
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        console.error('[Axios Interceptor] 토큰 재발급 실패. 로그아웃 처리');
+        store.dispatch(clearToken());
+        return Promise.reject(refreshError);
+      }
+    }
+
     // HTTP 상태 코드가 4xx, 5xx 에러인 경우
     if (error.response?.data && typeof error.response.data === 'object' && 'success' in error.response.data) {
       // 기존 컴포넌트 에러 처리(error.response.data.message 등)와 호환되도록 에러 데이터 구조 평탄화
@@ -61,6 +86,9 @@ export const authApi = {
 
   // 로그인 요청
   login: (credentials) => api.post('/auth/login', credentials),
+
+  // 토큰 재발급 요청 (Silent Refresh)
+  reissue: () => api.post('/auth/reissue', {}, { withCredentials: true }),
 
   // 로그아웃 요청
   logout: () => api.post('/auth/logout'),

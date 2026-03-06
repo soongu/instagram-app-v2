@@ -168,7 +168,8 @@ const Signup = () => {
 
       // 회원가입 성공시 처리
       // API 응답이 성공(200 OK 또는 201 Created 등)이면 예외가 발생하지 않으므로 로그인 페이지로 이동합니다.
-      navigate('/');
+      // 로그인 입력란을 자동 완성하고 토스트 메시지를 띄우기 위해 방금 가입한 아이디를 state로 함께 넘깁니다.
+      navigate('/', { state: { registeredId: formData.username } });
     } catch (error) {
       // 서버에서 에러 응답이 온 경우
       if (error.response?.data) {

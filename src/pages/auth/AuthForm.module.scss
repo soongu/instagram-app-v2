@@ -55,9 +55,12 @@
 
 .errorMessage {
   color: #ed4956;
-  font-size: 12px;
-  margin: 4px 0;
+  font-size: 13px;
+  line-height: 18px;
+  margin: 14px 0;
+  text-align: center;
   display: block;
+  word-break: keep-all; /* 단어 단위로 줄바꿈 방지 */
 }
 
 .authButton {
