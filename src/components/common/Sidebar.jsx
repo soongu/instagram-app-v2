@@ -17,12 +17,14 @@ import InstagramLogo from './InstagramLogo';
 import styles from './Sidebar.module.scss';
 import MorePopover from "./MorePopover.jsx";
 import {useEffect, useState} from "react";
-import {useSelector} from "react-redux";
+import {useSelector, useDispatch} from "react-redux";
+import { openCreateFeedModal } from '../../store/createFeedModalSlice';
+import CreateFeedModal from '../feed/CreateFeedModal';
 
 const Sidebar = () => {
 
   const storedUser = useSelector(state => state.auth.user);
-
+  const dispatch = useDispatch();
 
   const [showMoreMenu, setShowMoreMenu] = useState(false);
 
@@ -82,7 +84,7 @@ const Sidebar = () => {
           <span className={styles.menuText}>알림</span>
         </button>
 
-        <button type="button" className={styles.menuItem}>
+        <button type="button" className={styles.menuItem} onClick={() => dispatch(openCreateFeedModal())}>
           <FaRegSquarePlus size={24}/>
           <span className={styles.menuText}>만들기</span>
         </button>
@@ -111,6 +113,7 @@ const Sidebar = () => {
         </div>
       </div>
 
+      <CreateFeedModal />
     </nav>
   );
 };

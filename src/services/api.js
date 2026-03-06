@@ -129,7 +129,20 @@ export const postApi = {
   getPostsByHashtag: (hashtag) => api.get(`/hashtags/${hashtag}/posts`),
 
   // 개별 게시물 상세 정보 가져오기 (모달용)
-  getPost: (postId) => api.get(`/posts/${postId}`)
+  getPost: (postId) => api.get(`/posts/${postId}`),
+
+  // 게시물 생성 (멀티파트 폼 데이터)
+  createPost: (formData) => api.post(`/posts`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  }),
+};
+
+// 해시태그 관련 API 추가
+export const hashtagApi = {
+  // 해시태그 검색
+  searchHashtags: (keyword) => api.get(`/hashtags/search?keyword=${keyword}`),
 };
 
 // 좋아요 관련 API 추가
