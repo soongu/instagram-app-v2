@@ -42,6 +42,7 @@ Base URL: `/api`
     - `M006`: 로그인이 필요한 서비스입니다. (인증 정보 없음)
     - `M007`: 유요하지 않은 토큰입니다. (서명 위조 등)
     - `M008`: 만료된 토큰입니다. (Access Token 만료)
+    - `P003`: 게시물을 찾을 수 없습니다. (존재하지 않는 `postId` 등)
 
 ---
 
@@ -170,7 +171,7 @@ Base URL: `/api`
 - **Query Parameters**:
     - `page`: 페이지 번호 (기본값: 1)
     - `size`: 페이지 크기 (기본값: 5)
-- **Authentication**: 선택 사항 (로그인 시 `@LoginUser` 정보 활용 가능)
+- **Authentication**: **필수** (로그인 회원 기준 `likeStatus.liked`: 해당 글에 좋아요 눌렀으면 `true`)
 - **Response Body** (`ApiResponse<FeedResponse<PostResponse>>`):
 ```json
 {
@@ -202,6 +203,8 @@ Base URL: `/api`
   "error": null
 }
 ```
+- `likeStatus.liked`: 로그인한 사용자가 해당 글에 좋아요했으면 `true` (피드 조회 시 QueryDSL `EXISTS(post_like)` 한 쿼리로 계산).
+- `likeStatus.likeCount`: 게시물 비정규화 좋아요 수.
 
 ### 2.2 게시물 생성
 - **URL**: `/api/posts`
@@ -223,7 +226,48 @@ Base URL: `/api`
 }
 ```
 
+### 2.3 좋아요 토글 (Toggle Like)
+- **URL**: `/api/posts/{postId}/likes`
+- **Method**: `POST`
+- **Description**: 로그인한 사용자 기준으로 해당 게시물에 **좋아요를 추가하거나 취소**합니다.  
+  - 이미 좋아요한 상태에서 호출하면 → 좋아요 **취소**  
+  - 아직 안 누른 상태에서 호출하면 → 좋아요 **추가**  
+  한 번의 요청으로 on/off 가 전환되는 **토글** 동작입니다.
+- **Authentication**: **필수** (`Authorization: Bearer <AccessToken>`)
+- **Path Parameters**:
+    - `postId`: 대상 게시물 ID
+- **Request Body**: 없음
+- **Response Body** (`ApiResponse<LikeStatusResponse>`), **HTTP 200**:
+```json
+{
+  "success": true,
+  "data": {
+    "liked": true,
+    "likeCount": 12
+  },
+  "error": null
+}
+```
+- **필드 설명** (`LikeStatusResponse`):
+    - `liked` (`boolean`): **이 요청 직후** 상태. `true` = 지금 좋아요 눌린 상태, `false` = 취소된 상태.
+    - `likeCount` (`long`): 같은 요청 직후 해당 게시물의 **좋아요 수**. `Post.likeCount` 비정규화 값(토글 시 +1 / -1 반영).
+
+- **에러 (예시)**:
+    - **404** — `postId`에 해당 게시물이 없음 (`code`: `P003`, `message`: 게시물을 찾을 수 없습니다.)
+    - **401** — 미로그인 또는 토큰 무효 (`M006` ~ `M008` 등)
+
+- **클라이언트 가이드**:
+    - 토글 성공 후 UI는 응답의 `liked`로 하트 채움 여부, `likeCount`로 숫자를 바로 갱신할 수 있습니다.
+    - 피드 목록(`GET /api/posts`)의 `likeStatus`와 동일한 의미이며, 토글 후 피드를 다시 불러오면 목록과도 일치합니다.
+
+### 2.4 피드·프로필 그리드와 좋아요 필드 (참고)
+| API | 좋아요 관련 필드 | 설명 |
+|-----|------------------|------|
+| `GET /api/posts` (피드) | `feedList[].likeStatus.liked` | 로그인 사용자가 그 글에 좋아요했는지 (QueryDSL EXISTS 1쿼리) |
+| `GET /api/posts` (피드) | `feedList[].likeStatus.likeCount` | 게시물 비정규화 좋아요 수 |
+| `GET /api/members/{memberId}/posts` (프로필) | `feedList[].likeCount` | 동일 비정규화 값 (`liked` 없음) |
+
 ---
 
 > [!NOTE]
-> 댓글(Comment), 좋아요(Like), 프로필(Profile), 팔로우(Follow) 관련 기능은 현재 개발 진행 중이며, 컨트롤러 구현이 완료되는 대로 본 문서에 추가될 예정입니다.
+> 댓글(Comment), 프로필(Profile), 팔로우(Follow) 등 나머지 API는 구현·문서 보강 예정입니다. **좋아요 토글·피드 `likeStatus`는 반영됨.**

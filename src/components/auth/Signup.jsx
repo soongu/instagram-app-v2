@@ -64,7 +64,7 @@ const Signup = () => {
         // 전화번호인 경우 하이픈 제거 후 전송 (이메일은 영향 없음)
         const sendValue = fieldName === 'email' ? value.replace(/-/g, '') : value;
         const response = await authApi.checkDuplicate(checkType, sendValue);
-        const { available, message } = response.data;
+        const { available, message } = response;
 
         if (!available) {
           errorMessage = message;

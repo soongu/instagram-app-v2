@@ -44,8 +44,9 @@ api.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
-    // HTTP 401 에러(토큰 만료 등)이고 재시도한 적이 없으며, reissue 요청이 아닌 경우에만 재발급 시도
-    if (error.response?.status === 401 && !originalRequest._retry && originalRequest.url !== '/auth/reissue') {
+    // HTTP 401 에러(토큰 만료 등)이고 재시도한 적이 없으며, reissue/login 요청이 아닌 경우에만 재발급 시도
+    const isAuthEndpoint = ['/auth/reissue', '/auth/login', '/auth/signup'].includes(originalRequest.url);
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       originalRequest._retry = true;
       try {
         console.log('[Axios Interceptor] Access Token 만료 감지, 재발급 갱신 시도...');
