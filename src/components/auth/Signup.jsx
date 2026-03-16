@@ -1,13 +1,15 @@
 // Signup.jsx
-import {useCallback, useEffect, useState} from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import styles from '../../pages/auth/SignupPage.module.scss';
-import {checkPasswordStrength, ValidationRules} from "../../utils/ValidationRules";
-import {debounce} from "lodash";
-import {useNavigate} from "react-router-dom";
-import {authApi} from "../../services/api.js";
+import { checkPasswordStrength, ValidationRules } from '../../utils/ValidationRules';
+import { debounce } from 'lodash';
+import { useNavigate } from 'react-router-dom';
+import { authApi } from '../../services/api.js';
+import { showToast } from '../../store/toastSlice.js';
 
 const Signup = () => {
-
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   // 입력값들을 상태관리
@@ -182,11 +184,11 @@ const Signup = () => {
           }));
         } else {
           // 일반적인 에러
-          alert(message || '회원가입에 실패했습니다.');
+          dispatch(showToast(message || '회원가입에 실패했습니다.'));
         }
       } else {
         // 네트워크 에러 등의 경우
-        alert('서버와의 통신에 실패했습니다.');
+        dispatch(showToast('서버와의 통신에 실패했습니다.'));
       }
     }
   };

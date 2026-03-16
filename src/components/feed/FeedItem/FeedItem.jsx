@@ -9,6 +9,7 @@ import FeedItemComments from "./FeedItemComments";
 import { likeApi } from "../../../services/api.js";
 import { useDispatch, useSelector } from "react-redux";
 import { updateLikeStatus, setLikePending, clearLikePending } from "../../../store/likeSlice.js";
+import { showToast } from "../../../store/toastSlice.js";
 import CommentForm from "../../common/Comment/CommentForm.jsx";
 
 const FeedItem = ({ post }) => {
@@ -27,7 +28,7 @@ const FeedItem = ({ post }) => {
       const res = await likeApi.toggleLike(postId);
       dispatch(updateLikeStatus({ postId, ...res }));
     } catch (error) {
-      alert(error.response?.data?.message || '좋아요 처리에 실패했습니다.');
+      dispatch(showToast(error.response?.data?.message || '좋아요 처리에 실패했습니다.'));
     } finally {
       dispatch(clearLikePending(postId));
     }

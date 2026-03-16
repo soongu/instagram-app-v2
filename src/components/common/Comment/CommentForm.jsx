@@ -1,8 +1,9 @@
 import { useState } from "react";
 import styles from "./CommentForm.module.scss";
 import {commentApi} from "../../../services/api.js";
-import {useDispatch} from "react-redux";
-import {incrementCommentCount} from "../../../store/commentSlice.js";
+import { useDispatch } from 'react-redux';
+import { incrementCommentCount } from '../../../store/commentSlice.js';
+import { showToast } from '../../../store/toastSlice.js';
 
 const CommentForm = ({ feedId, onCommentAdded }) => {
   const [newComment, setNewComment] = useState("");
@@ -26,7 +27,7 @@ const CommentForm = ({ feedId, onCommentAdded }) => {
       setNewComment('');
     } catch (error) {
       console.error('댓글 작성 실패:', error);
-      alert('댓글 작성 중 오류가 발생했습니다.');
+      dispatch(showToast('댓글 작성 중 오류가 발생했습니다.'));
     }
   };
 

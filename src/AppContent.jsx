@@ -4,6 +4,7 @@ import { useDispatch } from 'react-redux';
 import { authApi } from './services/api';
 import { clearToken, setUser, refreshAccessToken } from './store/authSlice.js';
 import AppRoutes from './routes/AppRoutes';
+import GlobalToast from './components/common/GlobalToast';
 
 const AppContent = () => {
   const dispatch = useDispatch();
@@ -38,7 +39,12 @@ const AppContent = () => {
     return null;
   }
 
-  return <AppRoutes />;
+  return (
+    <>
+      <AppRoutes />
+      <GlobalToast />
+    </>
+  );
 };
 
 export default AppContent;

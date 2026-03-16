@@ -1,11 +1,12 @@
 // components/profile/ProfileImage.jsx
 
-import {useRef} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
+import { useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import styles from './ProfileImage.module.scss';
 import defaultProfileImage from '../../assets/images/default-profile.svg';
-import {updateProfileImage} from "../../store/authSlice.js";
-import {profileApi} from "../../services/api.js";
+import { updateProfileImage } from '../../store/authSlice.js';
+import { showToast } from '../../store/toastSlice.js';
+import { profileApi } from '../../services/api.js';
 
 const ProfileImage = ({imageUrl, username, editable}) => {
   const dispatch = useDispatch();
@@ -31,12 +32,12 @@ const ProfileImage = ({imageUrl, username, editable}) => {
 
     // 파일 유효성 검사
     if (!file.type.startsWith('image/')) {
-      alert('이미지 파일만 업로드 가능합니다.');
+      dispatch(showToast('이미지 파일만 업로드 가능합니다.'));
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) { // 10MB
-      alert('파일 크기는 10MB 이하여야 합니다.');
+      dispatch(showToast('파일 크기는 10MB 이하여야 합니다.'));
       return;
     }
 
@@ -52,7 +53,7 @@ const ProfileImage = ({imageUrl, username, editable}) => {
       // Redux store의 프로필 정보 업데이트
       dispatch(updateProfileImage(imageUrl));
     } catch (error) {
-      alert('프로필 사진 업데이트에 실패했습니다.');
+      dispatch(showToast('프로필 사진 업데이트에 실패했습니다.'));
     }
   };
 

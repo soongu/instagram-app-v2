@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { FaImages } from 'react-icons/fa6';
 import styles from '../CreateFeedModal.module.scss';
+import { showToast } from '../../../store/toastSlice.js';
 
 const MAX_FILES = 10;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -8,35 +10,40 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const BLOCKED_TYPES = ['image/svg+xml'];
 
 const validateFiles = (files) => {
-  return Array.from(files).filter((file) => {
+  const valid = [];
+  const errors = [];
+  Array.from(files).forEach((file) => {
     if (!file.type.startsWith('image/')) {
-      alert(`${file.name}은(는) 이미지가 아닙니다.`);
-      return false;
+      errors.push(`${file.name}은(는) 이미지가 아닙니다.`);
+      return;
     }
     if (BLOCKED_TYPES.includes(file.type)) {
-      alert(`${file.name}은(는) 업로드할 수 없는 형식입니다. (SVG 미지원)`);
-      return false;
+      errors.push(`${file.name}은(는) 업로드할 수 없는 형식입니다. (SVG 미지원)`);
+      return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      alert(`${file.name}은(는) 10MB를 초과합니다.`);
-      return false;
+      errors.push(`${file.name}은(는) 10MB를 초과합니다.`);
+      return;
     }
-    return true;
+    valid.push(file);
   });
+  return { valid, errors };
 };
 
 const Step1Upload = ({ onFilesSelected }) => {
+  const dispatch = useDispatch();
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
   const processFiles = (rawFiles) => {
     if (rawFiles.length > MAX_FILES) {
-      alert(`최대 ${MAX_FILES}개의 파일만 선택 가능합니다.`);
+      dispatch(showToast(`최대 ${MAX_FILES}개의 파일만 선택 가능합니다.`));
       return;
     }
-    const validated = validateFiles(rawFiles);
-    if (validated.length > 0) {
-      onFilesSelected(validated);
+    const { valid, errors } = validateFiles(rawFiles);
+    errors.forEach((msg) => dispatch(showToast(msg)));
+    if (valid.length > 0) {
+      onFilesSelected(valid);
     }
   };
 

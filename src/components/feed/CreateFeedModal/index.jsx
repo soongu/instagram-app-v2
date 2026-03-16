@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { FaXmark } from 'react-icons/fa6';
 import { closeCreateFeedModal } from '../../../store/createFeedModalSlice';
+import { showToast } from '../../../store/toastSlice.js';
 import { postApi } from '../../../services/api';
 import { applyFiltersToFiles } from '../../../utils/filterUtils';
 import ModalHeader from './ModalHeader';
@@ -96,7 +97,7 @@ const CreateFeedModal = () => {
         window.location.reload();
       } catch (error) {
         console.error('Failed to create post:', error);
-        alert(error.response?.data?.message || '게시물 생성에 실패했습니다.');
+        dispatch(showToast(error.response?.data?.message || '게시물 생성에 실패했습니다.'));
       } finally {
         setIsLoading(false);
       }

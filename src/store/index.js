@@ -5,6 +5,7 @@ import postModalReducer from "./postModalSlice";
 import createFeedModalReducer from "./createFeedModalSlice";
 import likeReducer from "./likeSlice";
 import commentReducer from "./commentSlice";
+import toastReducer from "./toastSlice.js";
 
 export const store = configureStore({
   reducer: {
@@ -13,5 +14,6 @@ export const store = configureStore({
     createFeedModal: createFeedModalReducer,
     likes: likeReducer,
     comments: commentReducer,
+    toast: toastReducer,
   },
 });
