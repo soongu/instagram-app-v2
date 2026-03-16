@@ -10,6 +10,7 @@ import PostComments from './PostComments';
 import PostActions from './PostActions';
 import { useDispatch, useSelector } from "react-redux";
 import { updateLikeStatus, setLikePending, clearLikePending } from "../../../store/likeSlice.js";
+import { store } from "../../../store/index.js";
 import CommentForm from "../../common/Comment/CommentForm.jsx";
 
 const PostDetailModal = () => {
@@ -43,11 +44,21 @@ const PostDetailModal = () => {
   };
 
   useEffect(() => {
-    if (isOpen && postId) {
+    if (!isOpen) {
+      setPost(null);
+      return;
+    }
+    if (postId) {
       const fetchPost = async () => {
         try {
+          // 인터셉터가 이미 data만 반환 → response가 곧 게시물 객체
           const response = await postApi.getPost(postId);
-          setPost(response.data);
+          const reduxLike = store.getState().likes.likes[postId];
+          // API에 likeStatus 없을 수 있음(프로필 등) → Redux 캐시로 보강해 피드·모달 동기화
+          setPost({
+            ...response,
+            likeStatus: response.likeStatus ?? reduxLike ?? { liked: false, likeCount: 0 },
+          });
         } catch (error) {
           console.error('Failed to fetch post details:', error);
         }
