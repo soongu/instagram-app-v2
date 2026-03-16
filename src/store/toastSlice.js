@@ -3,6 +3,7 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
   message: '',
+  type: 'default', // 'default' | 'error'
   isVisible: false,
 };
 
@@ -11,7 +12,14 @@ const toastSlice = createSlice({
   initialState,
   reducers: {
     showToast: (state, action) => {
-      state.message = action.payload ?? '';
+      const payload = action.payload;
+      if (typeof payload === 'string') {
+        state.message = payload;
+        state.type = 'default';
+      } else {
+        state.message = payload?.message ?? '';
+        state.type = payload?.type ?? 'default';
+      }
       state.isVisible = true;
     },
     hideToast: (state) => {

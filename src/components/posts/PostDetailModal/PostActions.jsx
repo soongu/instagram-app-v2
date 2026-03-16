@@ -26,7 +26,7 @@ const PostActions = ({ postId, likeStatus }) => {
       const res = await likeApi.toggleLike(postId);
       dispatch(updateLikeStatus({ postId, ...res }));
     } catch (error) {
-      dispatch(showToast(error.response?.data?.message || '좋아요 처리에 실패했습니다.'));
+      dispatch(showToast({ message: error.response?.data?.message || '좋아요 처리에 실패했습니다.', type: 'error' }));
     } finally {
       dispatch(clearLikePending(postId));
     }

@@ -5,7 +5,7 @@ import Toast from './Toast';
 
 const GlobalToast = () => {
   const dispatch = useDispatch();
-  const { message, isVisible } = useSelector((state) => state.toast);
+  const { message, type, isVisible } = useSelector((state) => state.toast);
 
   return (
     <Toast
@@ -13,6 +13,7 @@ const GlobalToast = () => {
       isVisible={isVisible}
       onClose={() => dispatch(hideToast())}
       duration={3000}
+      variant={type}
     />
   );
 };

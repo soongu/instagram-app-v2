@@ -184,11 +184,11 @@ const Signup = () => {
           }));
         } else {
           // 일반적인 에러
-          dispatch(showToast(message || '회원가입에 실패했습니다.'));
+          dispatch(showToast({ message: message || '회원가입에 실패했습니다.', type: 'error' }));
         }
       } else {
         // 네트워크 에러 등의 경우
-        dispatch(showToast('서버와의 통신에 실패했습니다.'));
+        dispatch(showToast({ message: '서버와의 통신에 실패했습니다.', type: 'error' }));
       }
     }
   };

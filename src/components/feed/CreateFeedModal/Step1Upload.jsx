@@ -37,11 +37,11 @@ const Step1Upload = ({ onFilesSelected }) => {
 
   const processFiles = (rawFiles) => {
     if (rawFiles.length > MAX_FILES) {
-      dispatch(showToast(`최대 ${MAX_FILES}개의 파일만 선택 가능합니다.`));
+      dispatch(showToast({ message: `최대 ${MAX_FILES}개의 파일만 선택 가능합니다.`, type: 'error' }));
       return;
     }
     const { valid, errors } = validateFiles(rawFiles);
-    errors.forEach((msg) => dispatch(showToast(msg)));
+    errors.forEach((msg) => dispatch(showToast({ message: msg, type: 'error' })));
     if (valid.length > 0) {
       onFilesSelected(valid);
     }

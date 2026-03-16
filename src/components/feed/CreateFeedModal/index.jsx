@@ -97,7 +97,7 @@ const CreateFeedModal = () => {
         window.location.reload();
       } catch (error) {
         console.error('Failed to create post:', error);
-        dispatch(showToast(error.response?.data?.message || '게시물 생성에 실패했습니다.'));
+        dispatch(showToast({ message: error.response?.data?.message || '게시물 생성에 실패했습니다.', type: 'error' }));
       } finally {
         setIsLoading(false);
       }

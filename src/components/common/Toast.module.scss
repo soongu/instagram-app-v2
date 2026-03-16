@@ -9,15 +9,22 @@
 }
 
 .toastContent {
-  background-color: #0095f6; /* 검정색에서 인스타그램 블루 색상으로 변경하여 강조 */
   color: #fff;
   padding: 12px 24px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(0, 149, 246, 0.3); /* 그림자도 블루 계열로 약간 변경 */
   text-align: center;
   white-space: nowrap;
+
+  /* 기본(성공/안내) */
+  background-color: #0095f6;
+  box-shadow: 0 4px 12px rgba(0, 149, 246, 0.3);
+}
+
+.toastContentError {
+  background-color: #c0392b; /* 에러: 붉은 계열 */
+  box-shadow: 0 4px 12px rgba(192, 57, 43, 0.35);
 }
 
 @keyframes slideUp {
