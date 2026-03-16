@@ -19,8 +19,8 @@ const PostDetailModal = () => {
   const dispatch = useDispatch();
 
   const handleDblClick = async () => {
-    const { data } = await likeApi.toggleLike(postId);
-    dispatch(updateLikeStatus({ postId, ...data }));
+    const res = await likeApi.toggleLike(postId);
+    dispatch(updateLikeStatus({ postId, ...res }));
   };
 
   // 기존 댓글에 추가 댓글 렌더링

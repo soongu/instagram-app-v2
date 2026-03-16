@@ -13,10 +13,9 @@ const FeedItemActions = ({postId, openModal, likeStatus}) => {
   const likeState = reduxLikeState || likeStatus; // { liked, likeCount }
 
   const handleToggleLike = async () => {
-    // API 호출: 서버에 좋아요 토글 요청
-    const {data} = await likeApi.toggleLike(postId);
-    // API 성공 후 redux 상태 업데이트
-    dispatch(updateLikeStatus({...data, postId}));
+    // API 호출: 서버에 좋아요 토글 요청 (인터셉터가 이미 data만 반환 → { liked, likeCount })
+    const res = await likeApi.toggleLike(postId);
+    dispatch(updateLikeStatus({ postId, ...res }));
   };
 
   return (

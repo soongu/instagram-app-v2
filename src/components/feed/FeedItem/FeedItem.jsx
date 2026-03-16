@@ -17,8 +17,8 @@ const FeedItem = ({ post }) => {
   const dispatch = useDispatch();
 
   const handleDblClick = async () => {
-    const { data } = await likeApi.toggleLike(post.feed_id);
-    dispatch(updateLikeStatus({ postId: post.feed_id, ...data }));
+    const res = await likeApi.toggleLike(post.feed_id);
+    dispatch(updateLikeStatus({ postId: post.feed_id, ...res }));
   };
 
   return (
