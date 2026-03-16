@@ -13,8 +13,11 @@ const likeSlice = createSlice({
       const { postId, liked, likeCount } = action.payload;
       state.likes[postId] = { liked, likeCount };
     },
+    clearLikes: (state) => {
+      state.likes = {};
+    },
   },
 });
 
-export const { updateLikeStatus } = likeSlice.actions;
+export const { updateLikeStatus, clearLikes } = likeSlice.actions;
 export default likeSlice.reducer;

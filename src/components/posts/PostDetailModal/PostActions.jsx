@@ -14,9 +14,9 @@ import {updateLikeStatus} from "../../../store/likeSlice.js";
 const PostActions = ({ postId, likeStatus }) => {
 
   const dispatch = useDispatch();
-  // Redux에 해당 게시물에 대한 좋아요 상태가 있다면 사용하고, 없으면 서버에서 온 초기값(likeStatus) 사용
+  // Redux 우선, 없으면 서버 초기값(likeStatus), 둘 다 없으면 기본값
   const reduxLikeState = useSelector(state => state.likes.likes[postId]);
-  const likeState = reduxLikeState || likeStatus; // { liked, likeCount }
+  const likeState = reduxLikeState ?? likeStatus ?? { liked: false, likeCount: 0 };
 
 
   const handleToggleLike = async () => {
