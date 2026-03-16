@@ -6,19 +6,31 @@ import FeedItemHeader from "./FeedItemHeader";
 import FeedItemContent from "./FeedItemContent";
 import FeedItemActions from "./FeedItemActions";
 import FeedItemComments from "./FeedItemComments";
-import {likeApi} from "../../../services/api.js";
-import {useDispatch} from "react-redux";
-import {updateLikeStatus} from "../../../store/likeSlice.js";
+import { likeApi } from "../../../services/api.js";
+import { useDispatch, useSelector } from "react-redux";
+import { updateLikeStatus, setLikePending, clearLikePending } from "../../../store/likeSlice.js";
 import CommentForm from "../../common/Comment/CommentForm.jsx";
 
 const FeedItem = ({ post }) => {
   const { openModal } = usePostModal();
-
   const dispatch = useDispatch();
+  const postId = post.feed_id;
+  const reduxLikeState = useSelector(state => state.likes.likes[postId]);
+  const likeState = reduxLikeState ?? post.likeStatus ?? { liked: false, likeCount: 0 };
+  const isToggling = useSelector(state => !!state.likes.pendingPostIds[postId]);
 
   const handleDblClick = async () => {
-    const res = await likeApi.toggleLike(post.feed_id);
-    dispatch(updateLikeStatus({ postId: post.feed_id, ...res }));
+    if (likeState?.liked) return; // 이미 좋아요일 때 더블클릭 = 유지 (API 호출 안 함)
+    if (isToggling) return;
+    dispatch(setLikePending(postId));
+    try {
+      const res = await likeApi.toggleLike(postId);
+      dispatch(updateLikeStatus({ postId, ...res }));
+    } catch (error) {
+      alert(error.response?.data?.message || '좋아요 처리에 실패했습니다.');
+    } finally {
+      dispatch(clearLikePending(postId));
+    }
   };
 
   return (

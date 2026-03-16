@@ -3,26 +3,39 @@ import {FaHeart, FaRegBookmark, FaRegComment, FaRegHeart, FaRegPaperPlane} from 
 import styles from "./FeedItem.module.scss";
 import {useDispatch, useSelector} from "react-redux";
 import {likeApi} from "../../../services/api.js";
-import {updateLikeStatus} from "../../../store/likeSlice.js";
+import {updateLikeStatus, setLikePending, clearLikePending} from "../../../store/likeSlice.js";
 
 const FeedItemActions = ({postId, openModal, likeStatus}) => {
 
   const dispatch = useDispatch();
-  // Redux 우선, 없으면 서버 초기값(likeStatus), 둘 다 없으면 기본값(피드 외 경로 대비)
   const reduxLikeState = useSelector(state => state.likes.likes[postId]);
   const likeState = reduxLikeState ?? likeStatus ?? { liked: false, likeCount: 0 };
+  const isToggling = useSelector(state => !!state.likes.pendingPostIds[postId]);
 
   const handleToggleLike = async () => {
-    // API 호출: 서버에 좋아요 토글 요청 (인터셉터가 이미 data만 반환 → { liked, likeCount })
-    const res = await likeApi.toggleLike(postId);
-    dispatch(updateLikeStatus({ postId, ...res }));
+    if (isToggling) return;
+    dispatch(setLikePending(postId));
+    try {
+      const res = await likeApi.toggleLike(postId);
+      dispatch(updateLikeStatus({ postId, ...res }));
+    } catch (error) {
+      alert(error.response?.data?.message || '좋아요 처리에 실패했습니다.');
+    } finally {
+      dispatch(clearLikePending(postId));
+    }
   };
 
   return (
     <div className={styles.actions}>
       <div className={styles.actionButtons}>
         <div className={styles.leftButtons}>
-          <button className={styles.actionButton} onClick={handleToggleLike}>
+          <button
+            type="button"
+            className={styles.actionButton}
+            onClick={handleToggleLike}
+            disabled={isToggling}
+            aria-busy={isToggling}
+          >
             {likeState?.liked ? <FaHeart className={styles.liked}/> : <FaRegHeart/>}
           </button>
           <button className={styles.actionButton} onClick={() => openModal(postId)}>

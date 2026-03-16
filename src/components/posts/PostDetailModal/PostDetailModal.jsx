@@ -1,26 +1,37 @@
 // src/components/posts/PostDetailModal.jsx
 import { useEffect, useState } from 'react';
 import { usePostModal } from '../../../hooks/usePostModal';
-import {likeApi, postApi} from '../../../services/api';
+import { likeApi, postApi } from '../../../services/api';
 import styles from './PostDetailModal.module.scss';
 import { FaTimes } from "react-icons/fa";
 import Carousel from '../../common/Carousel/Carousel';
 import PostHeader from './PostHeader';
 import PostComments from './PostComments';
 import PostActions from './PostActions';
-import {useDispatch} from "react-redux";
-import {updateLikeStatus} from "../../../store/likeSlice.js";
+import { useDispatch, useSelector } from "react-redux";
+import { updateLikeStatus, setLikePending, clearLikePending } from "../../../store/likeSlice.js";
 import CommentForm from "../../common/Comment/CommentForm.jsx";
 
 const PostDetailModal = () => {
   const { isOpen, postId, closeModal } = usePostModal();
   const [post, setPost] = useState(null);
-
   const dispatch = useDispatch();
+  const reduxLikeState = useSelector(state => state.likes.likes[postId]);
+  const likeState = reduxLikeState ?? post?.likeStatus ?? { liked: false, likeCount: 0 };
+  const isToggling = useSelector(state => !!state.likes.pendingPostIds[postId]);
 
   const handleDblClick = async () => {
-    const res = await likeApi.toggleLike(postId);
-    dispatch(updateLikeStatus({ postId, ...res }));
+    if (likeState?.liked) return; // 이미 좋아요일 때 더블클릭 = 유지
+    if (isToggling) return;
+    dispatch(setLikePending(postId));
+    try {
+      const res = await likeApi.toggleLike(postId);
+      dispatch(updateLikeStatus({ postId, ...res }));
+    } catch (error) {
+      alert(error.response?.data?.message || '좋아요 처리에 실패했습니다.');
+    } finally {
+      dispatch(clearLikePending(postId));
+    }
   };
 
   // 기존 댓글에 추가 댓글 렌더링
