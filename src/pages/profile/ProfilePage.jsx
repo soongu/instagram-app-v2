@@ -1,7 +1,6 @@
 // src/pages/ProfilePage.jsx
 import { useLoaderData } from 'react-router-dom';
 import styles from './ProfilePage.module.scss';
-import {useIsMyProfile} from "../../hooks/useIsMyProfile.js";
 import {FaGear} from "react-icons/fa6";
 import ProfileImage from "../../components/profile/ProfileImage.jsx";
 import ProfileFeed from "../../components/profile/ProfileFeed.jsx";
@@ -9,7 +8,9 @@ import ProfileFeed from "../../components/profile/ProfileFeed.jsx";
 const ProfilePage = () => {
   // loader에서 불러온 프로필 데이터
   const profileData = useLoaderData();
-  const isMyProfile = useIsMyProfile();
+  const isMyProfile = profileData?.isCurrentUser ?? false;
+  const followerCount = profileData?.followStatus?.followerCount ?? profileData?.followerCount ?? 0;
+  const followingCount = profileData?.followStatus?.followingCount ?? profileData?.followingCount ?? 0;
 
   const renderActionButtons = () => {
     if (isMyProfile) {
@@ -65,10 +66,10 @@ const ProfilePage = () => {
               게시물 <span className={styles.statsNumber}>{profileData.feedCount}</span>
             </li>
             <li>
-              팔로워 <span className={styles.statsNumber}>{profileData.followStatus.followerCount}</span>
+              팔로워 <span className={styles.statsNumber}>{followerCount}</span>
             </li>
             <li>
-              팔로우 <span className={styles.statsNumber}>{profileData.followStatus.followingCount}</span>
+              팔로우 <span className={styles.statsNumber}>{followingCount}</span>
             </li>
           </ul>
 

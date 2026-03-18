@@ -173,7 +173,6 @@ Base URL: `/api`
     - `size`: 페이지 크기 (기본값: 5)
 - **Authentication**: **필수** (로그인 회원 기준 `likeStatus.liked`: 해당 글에 좋아요 눌렀으면 `true`)
 - **Response Body** (`ApiResponse<SliceResponse<PostResponse>>`):
-    - 무한스크롤 응답의 목록 필드명은 `feedList`가 아니라 `items` 입니다.
 ```json
 {
   "success": true,
@@ -266,21 +265,22 @@ Base URL: `/api`
 |-----|------------------|------|
 | `GET /api/posts` (피드) | `items[].likeStatus.liked` | 로그인 사용자가 그 글에 좋아요했는지 (QueryDSL EXISTS 1쿼리) |
 | `GET /api/posts` (피드) | `items[].likeStatus.likeCount` | 게시물 비정규화 좋아요 수 |
-| `GET /api/members/{memberId}/posts` (프로필) | `items[].likeCount` | 동일 비정규화 값 (`liked` 없음) |
+| `GET /api/profiles/{username}/posts` (프로필) | `items[].likeCount` | 동일 비정규화 값 (`liked` 없음) |
 
 ---
 
-## 3. Member / Follow (`/members`)
+## 3. Profile / Follow (`/profiles`, `/members`)
 
-모든 회원/프로필/팔로우 관련 API의 베이스 경로는 `/api/members` 입니다.
+프론트 라우트가 `/:username` 이므로, 프로필 진입용 API는 `username` 기반 `/api/profiles/...` 를 우선 사용합니다.  
+기존 `memberId` 기반 `/api/members/...` API는 호환 또는 내부용으로 유지할 수 있습니다.
 
 ### 3.1 프로필 헤더 조회
-- **URL**: `/api/members/{memberId}`
+- **URL**: `/api/profiles/{username}`
 - **Method**: `GET`
-- **Description**: 특정 유저의 프로필 헤더에 필요한 기본 정보와, 로그인 유저 기준 팔로우 상태를 조회합니다.
+- **Description**: 특정 유저의 프로필 헤더에 필요한 기본 정보와, 로그인 유저 기준 팔로우 상태를 조회합니다. 프론트의 `/:username` 라우트와 바로 연결됩니다.
 - **Authentication**: **필수** (`Authorization: Bearer <AccessToken>`)
 - **Path Parameters**:
-    - `memberId`: 조회 대상 회원 ID
+    - `username`: 조회 대상 회원의 username
 - **Response Body** (`ApiResponse<MemberProfileResponse>`):
 ```json
 {
@@ -300,7 +300,45 @@ Base URL: `/api`
     - `isFollowing`: 로그인 유저가 이 프로필 주인을 팔로우 중이면 `true`
     - `isCurrentUser`: 조회 대상이 로그인 유저 본인이면 `true`
 
-### 3.2 팔로우
+- **호환용 기존 API**:
+    - `GET /api/members/{memberId}`
+    - 내부적으로 동일한 `MemberProfileResponse`를 반환합니다.
+
+### 3.2 프로필 피드 조회
+- **URL**: `/api/profiles/{username}/posts`
+- **Method**: `GET`
+- **Description**: 특정 유저의 프로필 그리드(게시물 목록)를 username 기준으로 조회합니다.
+- **Authentication**: 선택 또는 프론트 정책에 따름
+- **Query Parameters**:
+    - `page`: 페이지 번호 (기본값: 1)
+    - `size`: 페이지 크기 (기본값: 12)
+- **Path Parameters**:
+    - `username`: 조회 대상 회원의 username
+- **Response Body** (`ApiResponse<SliceResponse<ProfilePostResponse>>`):
+```json
+{
+  "success": true,
+  "data": {
+    "hasNext": false,
+    "items": [
+      {
+        "id": 101,
+        "thumbnailUrl": "https://picsum.photos/600/600?random=11",
+        "multipleImages": true,
+        "likeCount": 0,
+        "commentCount": 0
+      }
+    ]
+  },
+  "error": null
+}
+```
+
+- **호환용 기존 API**:
+    - `GET /api/members/{memberId}/posts`
+    - 내부적으로 동일한 `ProfilePostResponse` 목록을 반환합니다.
+
+### 3.3 팔로우
 - **URL**: `/api/members/{memberId}/follow`
 - **Method**: `POST`
 - **Description**: 로그인 유저가 대상 유저를 팔로우합니다.
@@ -324,7 +362,7 @@ Base URL: `/api`
     - **400** — 이미 팔로우 중인 경우 (`F001`)
     - **404** — 대상 회원이 존재하지 않는 경우 (`M004`)
 
-### 3.3 언팔로우
+### 3.4 언팔로우
 - **URL**: `/api/members/{memberId}/follow`
 - **Method**: `DELETE`
 - **Description**: 로그인 유저가 대상 유저를 언팔로우합니다.
@@ -347,7 +385,7 @@ Base URL: `/api`
     - **404** — 기존 팔로우 관계가 없는 경우 (`F002`)
     - **404** — 대상 회원이 존재하지 않는 경우 (`M004`)
 
-### 3.4 팔로워 목록 조회
+### 3.5 팔로워 목록 조회
 - **URL**: `/api/members/{memberId}/followers`
 - **Method**: `GET`
 - **Description**: 특정 유저를 팔로우하는 사람들의 목록을 조회합니다.
@@ -386,7 +424,7 @@ Base URL: `/api`
     - `following`: 로그인 유저 기준으로, 이 사람을 이미 팔로우 중이면 `true`
     - `me`: 리스트 항목의 회원이 로그인 유저 본인이면 `true`
 
-### 3.5 팔로잉 목록 조회
+### 3.6 팔로잉 목록 조회
 - **URL**: `/api/members/{memberId}/followings`
 - **Method**: `GET`
 - **Description**: 특정 유저가 팔로우하고 있는 사람들의 목록을 조회합니다.
@@ -428,4 +466,4 @@ Base URL: `/api`
 ---
 
 > [!NOTE]
-> 댓글(Comment) 등 나머지 API는 구현·문서 보강 예정입니다. 프로필 헤더, 팔로우/언팔로우, 팔로워/팔로잉 목록 API는 반영되었습니다.
+> 댓글(Comment) 등 나머지 API는 구현·문서 보강 예정입니다. 프론트 프로필 페이지용 `username` 기반 프로필 헤더/피드 API와 팔로우 관련 API는 반영되었습니다.

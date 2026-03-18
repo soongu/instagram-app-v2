@@ -89,7 +89,7 @@ const Sidebar = () => {
           <span className={styles.menuText}>만들기</span>
         </button>
 
-        <NavLink to={`/${storedUser?.username}`} className={styles.menuItem}>
+        <NavLink to={storedUser?.username ? `/${storedUser.username}` : '/'} className={styles.menuItem}>
           <div className={styles.profileImage}>
             <img src={storedUser?.profileImage || defaultProfileImage} alt="프로필"/>
           </div>

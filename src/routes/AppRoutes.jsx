@@ -22,7 +22,7 @@ const router = createBrowserRouter([
         element: <ProfilePage/>,
         loader: async ({params}) => {
           const response = await profileApi.getProfile(params.username);
-          return response.data;
+          return response;
         },
       }
     ]

@@ -93,9 +93,6 @@ export const authApi = {
 
   // 로그아웃 요청
   logout: () => api.post('/auth/logout'),
-
-  // 현재 로그인한 사용자 정보 조회 API 추가
-  getCurrentUser: () => api.get('/profiles/me'),
 };
 
 // 피드 관련 API

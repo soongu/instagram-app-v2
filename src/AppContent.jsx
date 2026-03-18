@@ -20,7 +20,12 @@ const AppContent = () => {
           const response = await authApi.reissue();
           console.log('[App 초기화] Silent Refresh 성공:', response.accessToken);
           dispatch(refreshAccessToken(response.accessToken));
-        } catch (error) {
+
+          const storedUser = localStorage.getItem('authUser');
+          if (storedUser) {
+            dispatch(setUser(JSON.parse(storedUser)));
+          }
+        } catch {
           console.log('[App 초기화] Silent Refresh 실패 (로그인 만료)');
           dispatch(clearToken());
         }
