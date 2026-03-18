@@ -172,13 +172,14 @@ Base URL: `/api`
     - `page`: 페이지 번호 (기본값: 1)
     - `size`: 페이지 크기 (기본값: 5)
 - **Authentication**: **필수** (로그인 회원 기준 `likeStatus.liked`: 해당 글에 좋아요 눌렀으면 `true`)
-- **Response Body** (`ApiResponse<FeedResponse<PostResponse>>`):
+- **Response Body** (`ApiResponse<SliceResponse<PostResponse>>`):
+    - 무한스크롤 응답의 목록 필드명은 `feedList`가 아니라 `items` 입니다.
 ```json
 {
   "success": true,
   "data": {
     "hasNext": true,
-    "feedList": [
+    "items": [
       {
         "feed_id": 1,
         "content": "게시물 내용",
@@ -263,11 +264,168 @@ Base URL: `/api`
 ### 2.4 피드·프로필 그리드와 좋아요 필드 (참고)
 | API | 좋아요 관련 필드 | 설명 |
 |-----|------------------|------|
-| `GET /api/posts` (피드) | `feedList[].likeStatus.liked` | 로그인 사용자가 그 글에 좋아요했는지 (QueryDSL EXISTS 1쿼리) |
-| `GET /api/posts` (피드) | `feedList[].likeStatus.likeCount` | 게시물 비정규화 좋아요 수 |
-| `GET /api/members/{memberId}/posts` (프로필) | `feedList[].likeCount` | 동일 비정규화 값 (`liked` 없음) |
+| `GET /api/posts` (피드) | `items[].likeStatus.liked` | 로그인 사용자가 그 글에 좋아요했는지 (QueryDSL EXISTS 1쿼리) |
+| `GET /api/posts` (피드) | `items[].likeStatus.likeCount` | 게시물 비정규화 좋아요 수 |
+| `GET /api/members/{memberId}/posts` (프로필) | `items[].likeCount` | 동일 비정규화 값 (`liked` 없음) |
+
+---
+
+## 3. Member / Follow (`/members`)
+
+모든 회원/프로필/팔로우 관련 API의 베이스 경로는 `/api/members` 입니다.
+
+### 3.1 프로필 헤더 조회
+- **URL**: `/api/members/{memberId}`
+- **Method**: `GET`
+- **Description**: 특정 유저의 프로필 헤더에 필요한 기본 정보와, 로그인 유저 기준 팔로우 상태를 조회합니다.
+- **Authentication**: **필수** (`Authorization: Bearer <AccessToken>`)
+- **Path Parameters**:
+    - `memberId`: 조회 대상 회원 ID
+- **Response Body** (`ApiResponse<MemberProfileResponse>`):
+```json
+{
+  "success": true,
+  "data": {
+    "memberId": 2,
+    "username": "mamel",
+    "name": "마이멜로디",
+    "profileImageUrl": "https://example.com/profile/mamel.jpg",
+    "isFollowing": true,
+    "isCurrentUser": false
+  },
+  "error": null
+}
+```
+- **필드 설명**:
+    - `isFollowing`: 로그인 유저가 이 프로필 주인을 팔로우 중이면 `true`
+    - `isCurrentUser`: 조회 대상이 로그인 유저 본인이면 `true`
+
+### 3.2 팔로우
+- **URL**: `/api/members/{memberId}/follow`
+- **Method**: `POST`
+- **Description**: 로그인 유저가 대상 유저를 팔로우합니다.
+- **Authentication**: **필수**
+- **Path Parameters**:
+    - `memberId`: 팔로우할 대상 회원 ID
+- **Response Body** (`ApiResponse<FollowStatusResponse>`):
+```json
+{
+  "success": true,
+  "data": {
+    "memberId": 2,
+    "following": true,
+    "followerCount": 11
+  },
+  "error": null
+}
+```
+- **에러 (예시)**:
+    - **400** — 자기 자신을 팔로우하려는 경우 (`F003`)
+    - **400** — 이미 팔로우 중인 경우 (`F001`)
+    - **404** — 대상 회원이 존재하지 않는 경우 (`M004`)
+
+### 3.3 언팔로우
+- **URL**: `/api/members/{memberId}/follow`
+- **Method**: `DELETE`
+- **Description**: 로그인 유저가 대상 유저를 언팔로우합니다.
+- **Authentication**: **필수**
+- **Path Parameters**:
+    - `memberId`: 언팔로우할 대상 회원 ID
+- **Response Body** (`ApiResponse<FollowStatusResponse>`):
+```json
+{
+  "success": true,
+  "data": {
+    "memberId": 2,
+    "following": false,
+    "followerCount": 10
+  },
+  "error": null
+}
+```
+- **에러 (예시)**:
+    - **404** — 기존 팔로우 관계가 없는 경우 (`F002`)
+    - **404** — 대상 회원이 존재하지 않는 경우 (`M004`)
+
+### 3.4 팔로워 목록 조회
+- **URL**: `/api/members/{memberId}/followers`
+- **Method**: `GET`
+- **Description**: 특정 유저를 팔로우하는 사람들의 목록을 조회합니다.
+- **Authentication**: **필수**
+- **Path Parameters**:
+    - `memberId`: 프로필 주인 회원 ID
+- **Response Body** (`ApiResponse<SliceResponse<FollowMemberResponse>>`):
+```json
+{
+  "success": true,
+  "data": {
+    "hasNext": false,
+    "items": [
+      {
+        "memberId": 1,
+        "username": "kuromi",
+        "name": "쿠로미",
+        "profileImageUrl": "https://example.com/profile/kuromi.jpg",
+        "following": false,
+        "me": true
+      },
+      {
+        "memberId": 3,
+        "username": "pikachu",
+        "name": "피카츄",
+        "profileImageUrl": "https://example.com/profile/pikachu.jpg",
+        "following": true,
+        "me": false
+      }
+    ]
+  },
+  "error": null
+}
+```
+- **필드 설명** (`FollowMemberResponse`):
+    - `following`: 로그인 유저 기준으로, 이 사람을 이미 팔로우 중이면 `true`
+    - `me`: 리스트 항목의 회원이 로그인 유저 본인이면 `true`
+
+### 3.5 팔로잉 목록 조회
+- **URL**: `/api/members/{memberId}/followings`
+- **Method**: `GET`
+- **Description**: 특정 유저가 팔로우하고 있는 사람들의 목록을 조회합니다.
+- **Authentication**: **필수**
+- **Path Parameters**:
+    - `memberId`: 프로필 주인 회원 ID
+- **Response Body** (`ApiResponse<SliceResponse<FollowMemberResponse>>`):
+```json
+{
+  "success": true,
+  "data": {
+    "hasNext": false,
+    "items": [
+      {
+        "memberId": 2,
+        "username": "mamel",
+        "name": "마이멜로디",
+        "profileImageUrl": "https://example.com/profile/mamel.jpg",
+        "following": true,
+        "me": false
+      },
+      {
+        "memberId": 5,
+        "username": "heartping",
+        "name": "하츄핑",
+        "profileImageUrl": "https://example.com/profile/heartping.jpg",
+        "following": false,
+        "me": false
+      }
+    ]
+  },
+  "error": null
+}
+```
+- **참고**:
+    - `followers` 와 `followings` 는 URL은 비슷하지만 Follow 조회 방향이 반대입니다.
+    - 현재 구현은 `SliceResponse` 형식을 사용하지만, 실제 데이터는 아직 `hasNext=false`로 반환됩니다.
 
 ---
 
 > [!NOTE]
-> 댓글(Comment), 프로필(Profile), 팔로우(Follow) 등 나머지 API는 구현·문서 보강 예정입니다. **좋아요 토글·피드 `likeStatus`는 반영됨.**
+> 댓글(Comment) 등 나머지 API는 구현·문서 보강 예정입니다. 프로필 헤더, 팔로우/언팔로우, 팔로워/팔로잉 목록 API는 반영되었습니다.

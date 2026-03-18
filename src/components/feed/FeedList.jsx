@@ -13,6 +13,10 @@ const FeedList = () => {
   const observerRef = useRef(null);
 
   useEffect(() => {
+    if (!hasNext) {
+      return;
+    }
+
     const fetchPosts = async () => {
 
       setIsLoading(true);
@@ -21,8 +25,9 @@ const FeedList = () => {
 
       try {
         const response = await feedApi.getFeedPosts(page);
-        setPosts(prev => [...prev, ...response.feedList]);
-        setHasNext(response.hasNext);
+        const nextItems = response?.items ?? response?.feedList ?? [];
+        setPosts(prev => [...prev, ...nextItems]);
+        setHasNext(response?.hasNext ?? false);
       } catch (error) {
         console.error('Failed to fetch posts:', error);
       } finally {
@@ -30,10 +35,8 @@ const FeedList = () => {
       }
     };
 
-    if (hasNext) {
-      fetchPosts();
-    }
-  }, [page]);
+    fetchPosts();
+  }, [page, hasNext]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

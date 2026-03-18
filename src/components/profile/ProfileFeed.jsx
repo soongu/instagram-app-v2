@@ -14,9 +14,9 @@ const ProfileFeed = ({ username }) => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        // 인터셉터가 data만 반환. 응답이 { feedList: [...] } 또는 배열일 수 있음
+        // 인터셉터가 data만 반환. 응답이 { items: [...] } 또는 배열일 수 있음
         const response = await postApi.getProfilePosts(username);
-        setPosts(response?.feedList ?? response ?? []);
+        setPosts(response?.items ?? response?.feedList ?? response ?? []);
       } catch (error) {
         console.error('Failed to fetch profile posts:', error);
       } finally {
