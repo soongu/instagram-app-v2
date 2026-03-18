@@ -23,6 +23,51 @@
   }
 }
 
+.thumbnailPlaceholder {
+  width: 100%;
+  height: 100%;
+  background: #efefef;
+}
+
+.multiImageBadge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  z-index: 2;
+  /* 실제 인스타처럼 시인성을 높이는 가벼운 그림자 */
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.45));
+}
+
+.multiImageBack,
+.multiImageFront {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+/* 뒤 박스: 우하단, 흰색 L자 띠 (테두리만 그림) */
+.multiImageBack {
+  top: 5px;
+  left: 5px;
+  width: 15px;
+  height: 15px;
+  border-bottom: 2px solid #fff;
+  border-right: 2px solid #fff;
+  border-bottom-right-radius: 4px;
+  background: transparent;
+}
+
+/* 앞 박스: 좌상단, 온전하게 둥글린 꽉 찬 사각형 */
+.multiImageFront {
+  top: 0;
+  left: 0;
+  width: 15px;
+  height: 15px;
+  background: #fff;
+  border-radius: 4px;
+}
+
 .overlay {
   position: absolute;
   top: 0;
