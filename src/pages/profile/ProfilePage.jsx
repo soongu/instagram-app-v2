@@ -113,7 +113,7 @@ const ProfilePage = () => {
           {/* 통계 정보 */}
           <ul className={styles.profileStats}>
             <li>
-              게시물 <span className={styles.statsNumber}>{profileData.feedCount}</span>
+              게시물 <span className={styles.statsNumber}>{profileData.feedCount || 0}</span>
             </li>
             <li onClick={() => openModal('followers')} style={{ cursor: 'pointer' }}>
               팔로워 <span className={styles.statsNumber}>{followerCount}</span>
