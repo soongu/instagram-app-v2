@@ -1,6 +1,6 @@
 // src/pages/ProfilePage.jsx
 import { useLoaderData } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './ProfilePage.module.scss';
 import {FaGear} from "react-icons/fa6";
 import ProfileImage from "../../components/profile/ProfileImage.jsx";
@@ -24,6 +24,15 @@ const ProfilePage = () => {
   const [followerCount, setFollowerCount] = useState(initialFollowerCount);
   const [followingCount, setFollowingCount] = useState(initialFollowingCount);
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
+
+  // profileData가 변경될 때 (다른 사용자의 프로필로 클라이언트 라우팅 시) 로컬 State 동기화
+  useEffect(() => {
+    if (profileData) {
+      setFollowerCount(profileData?.followStatus?.followerCount ?? profileData?.followerCount ?? 0);
+      setFollowingCount(profileData?.followStatus?.followingCount ?? profileData?.followingCount ?? 0);
+      setIsFollowing(profileData?.isFollowing ?? false);
+    }
+  }, [profileData]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState('followers'); // 'followers' or 'followings'
