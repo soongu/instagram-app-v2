@@ -8,7 +8,7 @@ import { updateProfileImage } from '../../store/authSlice.js';
 import { showToast } from '../../store/toastSlice.js';
 import { profileApi } from '../../services/api.js';
 
-const ProfileImage = ({imageUrl, username, editable}) => {
+const ProfileImage = ({imageUrl, username, editable, size = 'large'}) => {
   const dispatch = useDispatch();
   const fileInputRef = useRef(null);
 
@@ -58,9 +58,9 @@ const ProfileImage = ({imageUrl, username, editable}) => {
   };
 
   return (
-    <div className={styles.profileImageContainer}>
+    <div className={`${styles.profileImageContainer} ${size === 'small' ? styles.smallContainer : ''}`}>
       <div
-        className={`${styles.profileImage} ${editable ? styles.editable : ''}`}
+        className={`${styles.profileImage} ${editable ? styles.editable : ''} ${size === 'small' ? styles.smallImage : ''}`}
         onClick={handleImageClick}
       >
         <img

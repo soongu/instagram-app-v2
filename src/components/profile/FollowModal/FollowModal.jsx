@@ -142,7 +142,7 @@ const FollowModal = ({ isOpen, onClose, modalType, memberId, currentUsername }) 
                     imageUrl={user.profileImageUrl} 
                     username={user.username} 
                     editable={false}
-                    className={styles.profileAvatar}
+                    size="small"
                   />
                   <div className={styles.textInfo}>
                     <span className={styles.username}>{user.username}</span>
