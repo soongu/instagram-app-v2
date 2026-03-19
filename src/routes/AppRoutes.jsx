@@ -21,8 +21,16 @@ const router = createBrowserRouter([
         path: ':username',
         element: <ProfilePage/>,
         loader: async ({params}) => {
-          const response = await profileApi.getProfile(params.username);
-          return response;
+          try {
+            const response = await profileApi.getProfile(params.username);
+            return response;
+          } catch (error) {
+            console.error('Profile loader error:', error);
+            // 인증 에러 등일 때 라우터 컴포넌트 내부(AuthRequired 등)에서
+            // 처리할 수 있도록 null이나 기본 객체를 넘기거나 에러를 throw하여 ErrorBoundary가 잡게 합니다.
+            // 하지만 지금은 보호된 라우트이므로 그냥 null 리턴.
+            return null;
+          }
         },
       }
     ]

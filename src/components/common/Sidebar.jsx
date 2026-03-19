@@ -91,7 +91,7 @@ const Sidebar = () => {
 
         <NavLink to={storedUser?.username ? `/${storedUser.username}` : '/'} className={styles.menuItem}>
           <div className={styles.profileImage}>
-            <img src={storedUser?.profileImage || defaultProfileImage} alt="프로필"/>
+            <img src={storedUser?.profileImageUrl || defaultProfileImage} alt="프로필"/>
           </div>
           <span className={styles.menuText}>프로필</span>
         </NavLink>

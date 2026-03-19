@@ -12,6 +12,14 @@ const api = axios.create({
   },
 });
 
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+const onRefreshed = (token) => {
+  refreshSubscribers.forEach((callback) => callback(token));
+  refreshSubscribers = [];
+};
+
 // 요청 인터셉터 추가
 api.interceptors.request.use(
   (config) => {
@@ -44,27 +52,44 @@ api.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
-    // HTTP 401 에러(토큰 만료 등)이고 재시도한 적이 없으며, reissue/login 요청이 아닌 경우에만 재발급 시도
     const isAuthEndpoint = ['/auth/reissue', '/auth/login', '/auth/signup'].includes(originalRequest.url);
+    
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          refreshSubscribers.push((token) => {
+            if (token) {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+              resolve(api(originalRequest));
+            } else {
+              reject(error);
+            }
+          });
+        });
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
+      
       try {
         console.log('[Axios Interceptor] Access Token 만료 감지, 재발급 갱신 시도...');
         const response = await authApi.reissue();
-        // 앞선 응답 인터셉터 처리를 통해 이미 response = { accessToken: "..." } 형태입니다.
         const newAccessToken = response.accessToken;
         
         console.log('[Axios Interceptor] 토큰 갱신 성공:', newAccessToken);
-        // Redux 스토어에 새 토큰 저장
         store.dispatch(refreshAccessToken(newAccessToken));
         
-        // 원래 요청 헤더 갱신 후 재요청
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        onRefreshed(newAccessToken);
+        
         return api(originalRequest);
       } catch (refreshError) {
         console.error('[Axios Interceptor] 토큰 재발급 실패. 로그아웃 처리');
         store.dispatch(clearToken());
+        onRefreshed(null);
         return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
 
@@ -153,4 +178,16 @@ export const likeApi = {
 // 댓글 관련 API
 export const commentApi = {
   addComment: (feedId, payload) => api.post(`/posts/${feedId}/comments`, payload),
+};
+
+// 팔로우 관련 API
+export const followApi = {
+  // 팔로우
+  follow: (memberId) => api.post(`/members/${memberId}/follow`),
+  // 언팔로우
+  unfollow: (memberId) => api.delete(`/members/${memberId}/follow`),
+  // 팔로워 목록
+  getFollowers: (memberId, page = 0, size = 20) => api.get(`/members/${memberId}/followers?page=${page}&size=${size}`),
+  // 팔로잉 목록
+  getFollowings: (memberId, page = 0, size = 20) => api.get(`/members/${memberId}/followings?page=${page}&size=${size}`),
 };

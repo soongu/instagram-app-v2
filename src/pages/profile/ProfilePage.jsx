@@ -1,16 +1,54 @@
 // src/pages/ProfilePage.jsx
 import { useLoaderData } from 'react-router-dom';
+import { useState } from 'react';
 import styles from './ProfilePage.module.scss';
 import {FaGear} from "react-icons/fa6";
 import ProfileImage from "../../components/profile/ProfileImage.jsx";
 import ProfileFeed from "../../components/profile/ProfileFeed.jsx";
+import { followApi } from "../../services/api.js";
+import FollowModal from "../../components/profile/FollowModal/FollowModal.jsx";
 
 const ProfilePage = () => {
   // loader에서 불러온 프로필 데이터
   const profileData = useLoaderData();
+  
+  // profileData가 없으면 리렌더링 방지 (인증 실패 후 리다이렉트 처리 중이거나 로딩 중일 때)
+  if (!profileData) return null;
+
   const isMyProfile = profileData?.isCurrentUser ?? false;
-  const followerCount = profileData?.followStatus?.followerCount ?? profileData?.followerCount ?? 0;
-  const followingCount = profileData?.followStatus?.followingCount ?? profileData?.followingCount ?? 0;
+  
+  const initialFollowerCount = profileData?.followStatus?.followerCount ?? profileData?.followerCount ?? 0;
+  const initialFollowingCount = profileData?.followStatus?.followingCount ?? profileData?.followingCount ?? 0;
+  const initialIsFollowing = profileData?.isFollowing ?? false;
+
+  const [followerCount, setFollowerCount] = useState(initialFollowerCount);
+  const [followingCount, setFollowingCount] = useState(initialFollowingCount);
+  const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalType, setModalType] = useState('followers'); // 'followers' or 'followings'
+
+  const handleToggleFollow = async () => {
+    try {
+      if (isFollowing) {
+        await followApi.unfollow(profileData.memberId);
+        setFollowerCount(prev => prev - 1);
+        setIsFollowing(false);
+      } else {
+        await followApi.follow(profileData.memberId);
+        setFollowerCount(prev => prev + 1);
+        setIsFollowing(true);
+      }
+    } catch (error) {
+      console.error('팔로우 상태 변경 실패', error);
+      alert('오류가 발생했습니다.');
+    }
+  };
+
+  const openModal = (type) => {
+    setModalType(type);
+    setIsModalOpen(true);
+  };
 
   const renderActionButtons = () => {
     if (isMyProfile) {
@@ -29,8 +67,11 @@ const ProfilePage = () => {
     // 내 프로필이 아닌 경우 기본 형태만 렌더링
     return (
       <>
-        <button className={styles.followButton}>
-          팔로우
+        <button 
+          className={`${styles.followButton} ${isFollowing ? styles.following : ''}`}
+          onClick={handleToggleFollow}
+        >
+          {isFollowing ? '팔로잉' : '팔로우'}
         </button>
         <button className={styles.messageButton}>
           메시지 보내기
@@ -65,10 +106,10 @@ const ProfilePage = () => {
             <li>
               게시물 <span className={styles.statsNumber}>{profileData.feedCount}</span>
             </li>
-            <li>
+            <li onClick={() => openModal('followers')} style={{ cursor: 'pointer' }}>
               팔로워 <span className={styles.statsNumber}>{followerCount}</span>
             </li>
-            <li>
+            <li onClick={() => openModal('followings')} style={{ cursor: 'pointer' }}>
               팔로우 <span className={styles.statsNumber}>{followingCount}</span>
             </li>
           </ul>
@@ -81,6 +122,15 @@ const ProfilePage = () => {
 
       {/* 게시물 목록 */}
       <ProfileFeed username={profileData.username} />
+
+      {/* 팔로우 모달 */}
+      <FollowModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        modalType={modalType}
+        memberId={profileData.memberId}
+        currentUsername={profileData.username}
+      />
     </main>
   );
 };

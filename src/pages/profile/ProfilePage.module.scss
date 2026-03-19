@@ -66,6 +66,24 @@
 .followButton {
   background-color: #0095f6;
   color: white;
+
+  &.following {
+    background-color: #efefef;
+    color: #262626;
+
+    &:hover {
+      background-color: #dbdbdb;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background-color: #363636;
+      color: #fafafa;
+
+      &:hover {
+        background-color: #262626;
+      }
+    }
+  }
 }
 
 .settingsButton {
