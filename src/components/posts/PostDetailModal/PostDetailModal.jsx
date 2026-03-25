@@ -19,6 +19,7 @@ const PostDetailModal = () => {
   const [post, setPost] = useState(null);
   const [commentsPage, setCommentsPage] = useState(1);
   const [commentsHasNext, setCommentsHasNext] = useState(false);
+  const [isCommentsLoading, setIsCommentsLoading] = useState(false);
   const dispatch = useDispatch();
   const reduxLikeState = useSelector(state => state.likes.likes[postId]);
   const likeState = reduxLikeState ?? post?.likeStatus ?? { liked: false, likeCount: 0 };
@@ -38,11 +39,21 @@ const PostDetailModal = () => {
     }
   };
 
-  const refreshComments = useCallback(async () => {
+  const refreshComments = useCallback(async (isSilent) => {
     if (!postId || !isOpen) return;
+    const hideLoading = isSilent === true;
+
     try {
-      setCommentsPage(1);
-      const commentsRes = await postApi.getPostComments(postId, 1, 10);
+      if (!hideLoading) {
+        setIsCommentsLoading(true);
+        setCommentsPage(1);
+      }
+      
+      const fetchSize = hideLoading ? commentsPage * 10 : 10;
+      const [commentsRes] = await Promise.all([
+        postApi.getPostComments(postId, 1, fetchSize),
+        !hideLoading ? new Promise(resolve => setTimeout(resolve, 500)) : Promise.resolve()
+      ]);
       const items = commentsRes?.items ?? [];
       const mappedComments = items.map((c) => ({
         id: c.id,
@@ -57,8 +68,10 @@ const PostDetailModal = () => {
       setPost(prev => (prev ? { ...prev, comments: mappedComments } : prev));
     } catch (error) {
       console.error('Failed to fetch post comments:', error);
+    } finally {
+      if (!hideLoading) setIsCommentsLoading(false);
     }
-  }, [postId, isOpen]);
+  }, [postId, isOpen, commentsPage]);
 
   const loadMoreComments = async () => {
     if (!commentsHasNext || !postId) return;
@@ -132,7 +145,8 @@ const PostDetailModal = () => {
       };
     }
     return undefined;
-  }, [isOpen, postId, refreshComments]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, postId]);
 
   if (!isOpen || !post) return null;
 
@@ -158,15 +172,16 @@ const PostDetailModal = () => {
             postUser={post.user}
             postContent={post.content}
             postCreatedAt={post.createdAt}
-            onReplyAdded={refreshComments}
+            onReplyAdded={() => refreshComments(true)}
             closeModal={closeModal}
             hasMoreComments={commentsHasNext}
             onLoadMoreComments={loadMoreComments}
+            isCommentsLoading={isCommentsLoading}
           />
           <PostActions postId={postId} likeStatus={post.likeStatus} />
           {/* 댓글 입력창 */}
           <div className={styles.comment}>
-            <CommentForm feedId={postId} onCommentAdded={refreshComments} />
+            <CommentForm feedId={postId} onCommentAdded={() => refreshComments(true)} />
           </div>
         </div>
       </div>

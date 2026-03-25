@@ -5,19 +5,30 @@ import { formatDate, convertHashtagsToJsx } from "../../../utils/formatter.jsx";
 import { commentApi } from "../../../services/api.js";
 import { useState } from "react";
 
-const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, onReplyAdded, closeModal, hasMoreComments, onLoadMoreComments }) => {
+const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, onReplyAdded, closeModal, hasMoreComments, onLoadMoreComments, isCommentsLoading }) => {
   const navigate = useNavigate();
   const [replyTargetId, setReplyTargetId] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [repliesState, setRepliesState] = useState({});
 
   const handleViewReplies = async (comment) => {
-    const currentState = repliesState[comment.id] || { items: [], page: 1, hasNext: true, isFirstFetch: true };
-    if (!currentState.hasNext) return;
+    const currentState = repliesState[comment.id] || { items: [], page: 1, hasNext: true, isFirstFetch: true, isLoading: false };
+    if (!currentState.hasNext || currentState.isLoading) return;
+
+    setRepliesState(prev => ({
+      ...prev,
+      [comment.id]: {
+        ...currentState,
+        isLoading: true
+      }
+    }));
 
     try {
       const size = 3;
-      const res = await commentApi.getReplies(feedId, comment.id, currentState.page, size);
+      const [res] = await Promise.all([
+        commentApi.getReplies(feedId, comment.id, currentState.page, size),
+        new Promise(r => setTimeout(r, 300))
+      ]);
 
       setRepliesState((prev) => {
         const merged = [...currentState.items, ...(res.items || [])];
@@ -31,11 +42,19 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
             page: currentState.page + 1,
             hasNext: res.hasNext,
             isFirstFetch: false,
+            isLoading: false,
           },
         };
       });
     } catch (error) {
       console.error('Failed to fetch replies:', error);
+      setRepliesState(prev => ({
+        ...prev,
+        [comment.id]: {
+          ...currentState,
+          isLoading: false
+        }
+      }));
     }
   };
 
@@ -109,7 +128,17 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
 
       {/* 댓글 리스트 */}
       <div className={styles.commentsList}>
-        {comments.length === 0 ? (
+        {isCommentsLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className={styles.skeletonItem}>
+              <div className={styles.skeletonAvatar} />
+              <div className={styles.skeletonContent}>
+                <div className={`${styles.skeletonText} ${styles.skeletonTextShort}`} />
+                <div className={`${styles.skeletonText} ${styles.skeletonTextLong}`} />
+              </div>
+            </div>
+          ))
+        ) : comments.length === 0 ? (
           <div className={styles.noCommentsContainer}>
             <p className={styles.noComments}>댓글이 없습니다.</p>
             <p className={styles.noCommentsAdditional}>첫 번째 댓글을 남겨보세요!</p>
@@ -190,9 +219,13 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
                  (comment.replyCount - (repliesState[comment.id]?.items.length || 0)) > 0 ? (
                   <div className={styles.viewRepliesContainer}>
                     <div className={styles.replyLine} />
-                    <button className={styles.viewRepliesButton} onClick={() => handleViewReplies(comment)}>
-                      답글 보기({comment.replyCount - (repliesState[comment.id]?.items.length || 0)}개)
-                    </button>
+                    {repliesState[comment.id]?.isLoading ? (
+                      <div className={styles.replySpinner} />
+                    ) : (
+                      <button className={styles.viewRepliesButton} onClick={() => handleViewReplies(comment)}>
+                        답글 보기({comment.replyCount - (repliesState[comment.id]?.items.length || 0)}개)
+                      </button>
+                    )}
                   </div>
                 ) : null}
 

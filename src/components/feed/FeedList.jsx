@@ -1,12 +1,30 @@
 // src/components/feed/FeedList/FeedList.jsx
 import {useEffect, useRef, useState} from 'react';
 import { useDispatch } from "react-redux";
-import {FaSpinner} from 'react-icons/fa6';
 import styles from './FeedList.module.scss';
 import {feedApi} from "../../services/api.js";
 import FeedItem from "./FeedItem/FeedItem.jsx";
 import { updateLikeStatus } from "../../store/likeSlice.js";
 import { incrementCommentCount } from "../../store/commentSlice.js";
+
+const FeedSkeleton = () => (
+  <div className={styles.skeletonPost}>
+    <div className={styles.skeletonHeader}>
+      <div className={styles.skeletonAvatar} />
+      <div className={styles.skeletonUsername} />
+    </div>
+    <div className={styles.skeletonImage} />
+    <div className={styles.skeletonFooter}>
+      <div className={styles.skeletonIconGroup}>
+        <div className={styles.skeletonIcon} />
+        <div className={styles.skeletonIcon} />
+        <div className={styles.skeletonIcon} />
+      </div>
+      <div className={styles.skeletonTextLine} />
+      <div className={styles.skeletonTextLineShort} />
+    </div>
+  </div>
+);
 
 const FeedList = () => {
   const dispatch = useDispatch();
@@ -91,9 +109,10 @@ const FeedList = () => {
       </div>
       <div ref={observerRef} className={styles.loader}>
         {isLoading && (
-          <div className={styles.spinner}>
-            <FaSpinner/>
-          </div>
+          <>
+            <FeedSkeleton />
+            <FeedSkeleton />
+          </>
         )}
       </div>
     </>
