@@ -125,6 +125,12 @@
     gap: 10px;
   }
 
+  .postHeaderRight {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
   .postProfileImage {
     width: 40px;
     height: 40px;
@@ -151,6 +157,29 @@
     border: none;
     font-size: 16px;
     cursor: pointer;
+  }
+}
+
+.followButton {
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  background-color: #0095f6;
+  color: white;
+}
+
+.following {
+  background-color: #efefef;
+  color: #262626;
+}
+
+@media (prefers-color-scheme: dark) {
+  .following {
+    background-color: #363636;
+    color: #fafafa;
   }
 }
 // 댓글 목록
@@ -205,8 +234,87 @@
 
   .postTime {
     font-size: 12px;
-    color: #8e8e8e;
-    margin-top: 4px;
+    color: #737373;
+  }
+
+  .commentTimeAndReply {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    margin-top: 6px;
+  }
+
+  .commentLikes {
+    font-size: 12px;
+    color: #737373;
+    font-weight: 600;
+  }
+
+  .replyButton {
+    background: none;
+    border: none;
+    color: #737373;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0;
+    white-space: nowrap;
+  }
+
+  .viewRepliesContainer {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 12px;
+    margin-bottom: 4px;
+  }
+
+  .replyLine {
+    width: 24px;
+    height: 1px;
+    background-color: #737373;
+  }
+
+  .viewRepliesButton {
+    background: none;
+    border: none;
+    color: #737373;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .replyForm {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .replyInput {
+    flex: 1;
+    border: 1px solid #dbdbdb;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .replySubmitButton {
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    background-color: #0095f6;
+    color: #fff;
+
+    &:disabled {
+      background-color: #b3e0ff;
+      cursor: not-allowed;
+    }
   }
 
   .noCommentsContainer {

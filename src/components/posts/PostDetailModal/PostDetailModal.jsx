@@ -1,5 +1,5 @@
 // src/components/posts/PostDetailModal.jsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { usePostModal } from '../../../hooks/usePostModal';
 import { likeApi, postApi } from '../../../services/api';
 import styles from './PostDetailModal.module.scss';
@@ -36,16 +36,25 @@ const PostDetailModal = () => {
     }
   };
 
-  // 기존 댓글에 추가 댓글 렌더링
-  const addComment = (newComment) => {
-    setPost(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        comments: [...(prev.comments ?? []), newComment],
-      };
-    });
-  };
+  const refreshComments = useCallback(async () => {
+    if (!postId || !isOpen) return;
+    try {
+      const commentsRes = await postApi.getPostComments(postId, 1, 20);
+      const items = commentsRes?.items ?? [];
+      const mappedComments = items.map((c) => ({
+        id: c.id,
+        content: c.content,
+        username: c.username,
+        userProfileImage: c.profileImageUrl,
+        createdAt: c.createdAt,
+        replyCount: c.replyCount,
+      }));
+
+      setPost(prev => (prev ? { ...prev, comments: mappedComments } : prev));
+    } catch (error) {
+      console.error('Failed to fetch post comments:', error);
+    }
+  }, [postId, isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -83,24 +92,7 @@ const PostDetailModal = () => {
           if (!isCancelled) setPost(normalizedPost);
 
           // 댓글은 별도 엔드포인트에서 조회
-          try {
-            const commentsRes = await postApi.getPostComments(postId, 1, 20);
-            const items = commentsRes?.items ?? [];
-            const mappedComments = items.map((c) => ({
-              id: c.id,
-              content: c.content,
-              username: c.username,
-              userProfileImage: c.profileImageUrl,
-              createdAt: c.createdAt,
-              replyCount: c.replyCount,
-            }));
-
-            if (!isCancelled) {
-              setPost(prev => (prev ? { ...prev, comments: mappedComments } : prev));
-            }
-          } catch (error) {
-            console.error('Failed to fetch post comments:', error);
-          }
+          await refreshComments();
         } catch (error) {
           console.error('Failed to fetch post details:', error);
         }
@@ -113,7 +105,7 @@ const PostDetailModal = () => {
       };
     }
     return undefined;
-  }, [isOpen, postId]);
+  }, [isOpen, postId, refreshComments]);
 
   if (!isOpen || !post) return null;
 
@@ -134,15 +126,17 @@ const PostDetailModal = () => {
         <div className={styles.modalSidebar}>
           <PostHeader user={post.user} closeModal={closeModal} />
           <PostComments
+            feedId={postId}
             comments={post.comments}
             postUser={post.user}
             postContent={post.content}
             postCreatedAt={post.createdAt}
+            onReplyAdded={refreshComments}
           />
           <PostActions postId={postId} likeStatus={post.likeStatus} />
           {/* 댓글 입력창 */}
           <div className={styles.comment}>
-            <CommentForm feedId={postId} onCommentAdded={addComment} />
+            <CommentForm feedId={postId} onCommentAdded={refreshComments} />
           </div>
         </div>
       </div>
