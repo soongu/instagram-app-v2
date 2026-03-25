@@ -6,8 +6,17 @@ import {useSelector} from "react-redux";
 
 const PostGridItem = ({ post }) => {
   const { openModal } = usePostModal();
-  // 피드(feed_id) / 프로필(id) API 차이 대비
-  const postId = post.id ?? post.feed_id;
+  // 프로필/피드 API 응답 키가 다를 수 있어, 상세조회에 맞는 값을 우선으로 선택
+  // (프로필 grid은 id만 주기도 하지만, feed_id가 함께 오거나 id가 상세조회용이 아닐 수도 있음)
+  const postId = post.feed_id ?? post.feedId ?? post.postId ?? post.post_id ?? post.id;
+  
+  const handleClick = () => {
+    if (!postId) {
+      console.warn('PostGridItem: missing postId for modal open', { post });
+      return;
+    }
+    openModal(postId, 'profile');
+  };
   const thumbnailUrl = post.thumbnailUrl ?? post.mainThumbnail ?? post.images?.[0]?.imageUrl ?? '';
   const hasMultipleImages = post.multipleImages ?? (post.images?.length > 1);
 
@@ -18,7 +27,7 @@ const PostGridItem = ({ post }) => {
   const likeCount = reduxLikeState?.likeCount ?? post.likeCount ?? 0;
 
   return (
-    <div className={styles.gridItem} onClick={() => openModal(postId)}>
+    <div className={styles.gridItem} onClick={handleClick}>
       {thumbnailUrl ? (
         <img src={thumbnailUrl} alt="게시물 썸네일" className={styles.thumbnail} />
       ) : (

@@ -283,6 +283,11 @@ Base URL: `/api`
       "profileImageUrl": "https://example.com/profile/mamel.jpg"
     },
     "imageUrls": ["https://example.com/post/1.jpg"],
+    "createdAt": "2026-03-25T17:00:00",
+    "likeStatus": {
+      "liked": false,
+      "likeCount": 12
+    },
     "prevPostId": null,
     "nextPostId": null
   },
@@ -292,6 +297,8 @@ Base URL: `/api`
 - **필드 설명** (`PostDetailResponse`):
     - `writer`: 게시글 작성자 요약(`memberId`, `username`, `profileImageUrl`)
     - `imageUrls`: 게시물 이미지 URL 목록(캐러셀)
+    - `createdAt`: 게시물 생성 시간
+    - `likeStatus`: 로그인 유저 기준 좋아요 상태(`liked`, `likeCount`)
     - `prevPostId` / `nextPostId`: `context="profile"`일 때만 이전/다음 글 ID, 그 외에는 `null`
 - **에러 (예시)**:
     - **404** — `postId`에 해당 게시물이 없는 경우 (`P003`: 게시물을 찾을 수 없습니다.)

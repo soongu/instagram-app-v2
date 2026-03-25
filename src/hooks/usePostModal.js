@@ -4,16 +4,15 @@ import { openPostModal, closePostModal } from "../store/postModalSlice";
 
 export const usePostModal = () => {
   const dispatch = useDispatch();
-  const { isOpen, postId } = useSelector(state => state.postModal);
+  const { isOpen, postId, context } = useSelector(state => state.postModal);
 
-  const openModal = (id) => {
-    console.log('open: ', id)
-    dispatch(openPostModal(id));
+  const openModal = (id, ctx = 'feed') => {
+    dispatch(openPostModal({ id, context: ctx }));
   };
 
   const closeModal = () => {
     dispatch(closePostModal());
   };
 
-  return { isOpen, postId, openModal, closeModal };
+  return { isOpen, postId, context, openModal, closeModal };
 };

@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { usePostModal } from '../../../hooks/usePostModal';
 import { likeApi, postApi } from '../../../services/api';
 import styles from './PostDetailModal.module.scss';
-import { FaTimes } from "react-icons/fa";
+import { FaTimes, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import Carousel from '../../common/Carousel/Carousel';
 import PostHeader from './PostHeader';
 import PostComments from './PostComments';
@@ -15,7 +15,7 @@ import { store } from "../../../store/index.js";
 import CommentForm from "../../common/Comment/CommentForm.jsx";
 
 const PostDetailModal = () => {
-  const { isOpen, postId, closeModal } = usePostModal();
+  const { isOpen, postId, context, openModal, closeModal } = usePostModal();
   const [post, setPost] = useState(null);
   const [commentsPage, setCommentsPage] = useState(1);
   const [commentsHasNext, setCommentsHasNext] = useState(false);
@@ -107,7 +107,7 @@ const PostDetailModal = () => {
       const fetchData = async () => {
         try {
           // 인터셉터가 이미 data만 반환 → response가 곧 게시물 객체
-          const response = await postApi.getPost(postId, 'feed');
+          const response = await postApi.getPost(postId, context);
           const reduxLike = store.getState().likes.likes[postId];
 
           const normalizedPost = {
@@ -122,12 +122,19 @@ const PostDetailModal = () => {
                 }
               : { username: '', profileImage: undefined },
             comments: [],
-            // 스펙상 createdAt가 없을 수 있음. PostComments에서 가드 처리.
-            createdAt: undefined,
+            createdAt: response.createdAt,
             prevPostId: response.prevPostId ?? null,
             nextPostId: response.nextPostId ?? null,
             likeStatus: response.likeStatus ?? reduxLike ?? { liked: false, likeCount: 0 },
           };
+
+          if (response.likeStatus) {
+            dispatch(updateLikeStatus({
+              postId,
+              liked: response.likeStatus.liked,
+              likeCount: response.likeStatus.likeCount
+            }));
+          }
 
           if (!isCancelled) setPost(normalizedPost);
 
@@ -158,6 +165,24 @@ const PostDetailModal = () => {
       <button className={styles.closeButton} onClick={closeModal}>
         <FaTimes />
       </button>
+
+      {post.prevPostId && (
+        <button 
+          className={`${styles.navButton} ${styles.navLeft}`} 
+          onClick={() => openModal(post.prevPostId, context)}
+        >
+          <FaChevronLeft />
+        </button>
+      )}
+
+      {post.nextPostId && (
+        <button 
+          className={`${styles.navButton} ${styles.navRight}`} 
+          onClick={() => openModal(post.nextPostId, context)}
+        >
+          <FaChevronRight />
+        </button>
+      )}
 
       <div className={styles.modalContent}>
         <div className={styles.modalCarouselContainer}>

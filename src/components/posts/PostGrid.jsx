@@ -10,7 +10,10 @@ const PostGrid = ({ posts }) => {
   return (
     <div className={styles.postGrid}>
       {posts.map((post) => (
-        <PostGridItem key={post.id ?? post.feed_id} post={post} />
+        <PostGridItem
+          key={post.feed_id ?? post.feedId ?? post.postId ?? post.post_id ?? post.id}
+          post={post}
+        />
       ))}
     </div>
   );
