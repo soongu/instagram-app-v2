@@ -23,7 +23,9 @@ const PostGridItem = ({ post }) => {
   const reduxLikeState = useSelector(state => state.likes.likes[postId]);
   const commentCountState = useSelector(state => state.comments.commentCounts[postId]);
 
-  const commentCount = commentCountState ?? post.commentCount ?? 0;
+  // commentCounts는 서버의 기존 count를 모르기 때문에 "추가된 델타"만 누적되는 구조입니다.
+  // 따라서 서버(count) + 델타를 합산해 보여줍니다.
+  const commentCount = (post.commentCount ?? 0) + (commentCountState ?? 0);
   const likeCount = reduxLikeState?.likeCount ?? post.likeCount ?? 0;
 
   return (

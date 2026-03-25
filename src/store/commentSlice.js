@@ -7,6 +7,9 @@ const commentSlice = createSlice({
     commentCounts: {}
   },
   reducers: {
+    clearCommentCounts: (state) => {
+      state.commentCounts = {};
+    },
     incrementCommentCount: (state, action) => {
       const {feedId, commentCount} = action.payload;
       state.commentCounts[feedId] = commentCount;
@@ -20,5 +23,5 @@ const commentSlice = createSlice({
   }
 });
 
-export const { incrementCommentCount, addCommentCount } = commentSlice.actions;
+export const { clearCommentCounts, incrementCommentCount, addCommentCount } = commentSlice.actions;
 export default commentSlice.reducer;
