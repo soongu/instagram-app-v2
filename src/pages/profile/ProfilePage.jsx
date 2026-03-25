@@ -11,15 +11,13 @@ import FollowModal from "../../components/profile/FollowModal/FollowModal.jsx";
 const ProfilePage = () => {
   // loader에서 불러온 프로필 데이터
   const profileData = useLoaderData();
-  
-  // profileData가 없으면 리렌더링 방지 (인증 실패 후 리다이렉트 처리 중이거나 로딩 중일 때)
-  if (!profileData) return null;
 
   const isMyProfile = profileData?.isCurrentUser ?? false;
   
   const initialFollowerCount = profileData?.followStatus?.followerCount ?? profileData?.followerCount ?? 0;
   const initialFollowingCount = profileData?.followStatus?.followingCount ?? profileData?.followingCount ?? 0;
   const initialIsFollowing = profileData?.isFollowing ?? false;
+  const postCount = profileData?.postCount ?? profileData?.feedCount ?? 0;
 
   const [followerCount, setFollowerCount] = useState(initialFollowerCount);
   const [followingCount, setFollowingCount] = useState(initialFollowingCount);
@@ -90,6 +88,9 @@ const ProfilePage = () => {
 
   }
 
+  // profileData가 없으면(인증 실패 등) 안전하게 렌더링을 중단합니다.
+  if (!profileData) return null;
+
   return (
     <main className={styles.profileMain}>
       {/* 프로필 헤더 */}
@@ -113,7 +114,7 @@ const ProfilePage = () => {
           {/* 통계 정보 */}
           <ul className={styles.profileStats}>
             <li>
-              게시물 <span className={styles.statsNumber}>{profileData.feedCount || 0}</span>
+              게시물 <span className={styles.statsNumber}>{postCount}</span>
             </li>
             <li onClick={() => openModal('followers')} style={{ cursor: 'pointer' }}>
               팔로워 <span className={styles.statsNumber}>{followerCount}</span>

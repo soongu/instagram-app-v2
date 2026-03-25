@@ -260,7 +260,43 @@ Base URL: `/api`
     - 토글 성공 후 UI는 응답의 `liked`로 하트 채움 여부, `likeCount`로 숫자를 바로 갱신할 수 있습니다.
     - 피드 목록(`GET /api/posts`)의 `likeStatus`와 동일한 의미이며, 토글 후 피드를 다시 불러오면 목록과도 일치합니다.
 
-### 2.4 피드·프로필 그리드와 좋아요 필드 (참고)
+### 2.4 피드 상세 조회
+- **URL**: `/api/posts/{postId}`
+- **Method**: `GET`
+- **Description**: 게시물 본문/이미지 캐러셀/작성자 요약과, 선택적 네비게이션 식별자(`prevPostId`, `nextPostId`)를 반환합니다.
+- **Authentication**: 선택 (비로그인도 호출 가능)
+- **Query Parameters**:
+    - `context`: 선택 파라미터 (예: `"profile"` 또는 `"feed"`)
+        - `context="profile"` 일 때만 `prevPostId` / `nextPostId`가 채워집니다.
+- **Path Parameters**:
+    - `postId`: 대상 게시물 ID
+- **Response Body** (`ApiResponse<PostDetailResponse>`):
+```json
+{
+  "success": true,
+  "data": {
+    "postId": 123,
+    "content": "게시물 내용",
+    "writer": {
+      "memberId": 2,
+      "username": "mamel",
+      "profileImageUrl": "https://example.com/profile/mamel.jpg"
+    },
+    "imageUrls": ["https://example.com/post/1.jpg"],
+    "prevPostId": null,
+    "nextPostId": null
+  },
+  "error": null
+}
+```
+- **필드 설명** (`PostDetailResponse`):
+    - `writer`: 게시글 작성자 요약(`memberId`, `username`, `profileImageUrl`)
+    - `imageUrls`: 게시물 이미지 URL 목록(캐러셀)
+    - `prevPostId` / `nextPostId`: `context="profile"`일 때만 이전/다음 글 ID, 그 외에는 `null`
+- **에러 (예시)**:
+    - **404** — `postId`에 해당 게시물이 없는 경우 (`P003`: 게시물을 찾을 수 없습니다.)
+
+### 2.5 피드·프로필 그리드와 좋아요 필드 (참고)
 | API | 좋아요 관련 필드 | 설명 |
 |-----|------------------|------|
 | `GET /api/posts` (피드) | `items[].likeStatus.liked` | 로그인 사용자가 그 글에 좋아요했는지 (QueryDSL EXISTS 1쿼리) |
@@ -290,6 +326,9 @@ Base URL: `/api`
     "username": "mamel",
     "name": "마이멜로디",
     "profileImageUrl": "https://example.com/profile/mamel.jpg",
+    "followerCount": 10,
+    "followingCount": 20,
+    "postCount": 30,
     "isFollowing": true,
     "isCurrentUser": false
   },
@@ -297,6 +336,9 @@ Base URL: `/api`
 }
 ```
 - **필드 설명**:
+    - `followerCount`: 팔로워 수 (target을 follow 하는 사람 수)
+    - `followingCount`: 팔로잉 수 (target이 follow 하는 사람 수)
+    - `postCount`: 게시물 수 (target 작성 게시물 수)
     - `isFollowing`: 로그인 유저가 이 프로필 주인을 팔로우 중이면 `true`
     - `isCurrentUser`: 조회 대상이 로그인 유저 본인이면 `true`
 
@@ -390,6 +432,9 @@ Base URL: `/api`
 - **Method**: `GET`
 - **Description**: 특정 유저를 팔로우하는 사람들의 목록을 조회합니다.
 - **Authentication**: **필수**
+- **Query Parameters**:
+    - `page`: 페이지 번호 (기본값: 1)
+    - `size`: 페이지 크기 (기본값: 20, 최대 50)
 - **Path Parameters**:
     - `memberId`: 프로필 주인 회원 ID
 - **Response Body** (`ApiResponse<SliceResponse<FollowMemberResponse>>`):
@@ -423,12 +468,17 @@ Base URL: `/api`
 - **필드 설명** (`FollowMemberResponse`):
     - `following`: 로그인 유저 기준으로, 이 사람을 이미 팔로우 중이면 `true`
     - `me`: 리스트 항목의 회원이 로그인 유저 본인이면 `true`
+- **정렬 기준**:
+    - 가장 최근에 팔로우한 사람이 먼저 내려갑니다. (`Follow.createdAt DESC`)
 
 ### 3.6 팔로잉 목록 조회
 - **URL**: `/api/members/{memberId}/followings`
 - **Method**: `GET`
 - **Description**: 특정 유저가 팔로우하고 있는 사람들의 목록을 조회합니다.
 - **Authentication**: **필수**
+- **Query Parameters**:
+    - `page`: 페이지 번호 (기본값: 1)
+    - `size`: 페이지 크기 (기본값: 20, 최대 50)
 - **Path Parameters**:
     - `memberId`: 프로필 주인 회원 ID
 - **Response Body** (`ApiResponse<SliceResponse<FollowMemberResponse>>`):
@@ -461,9 +511,116 @@ Base URL: `/api`
 ```
 - **참고**:
     - `followers` 와 `followings` 는 URL은 비슷하지만 Follow 조회 방향이 반대입니다.
-    - 현재 구현은 `SliceResponse` 형식을 사용하지만, 실제 데이터는 아직 `hasNext=false`로 반환됩니다.
+    - 두 API 모두 `SliceResponse.hasNext`를 실제 페이징 결과에 맞게 반환합니다.
+    - 정렬 기준은 최신순이며, 가장 최근에 생성된 팔로우 관계가 맨 위에 옵니다. (`Follow.createdAt DESC`)
 
 ---
+## 4. 댓글 (`/posts/.../comments`)
 
-> [!NOTE]
-> 댓글(Comment) 등 나머지 API는 구현·문서 보강 예정입니다. 프론트 프로필 페이지용 `username` 기반 프로필 헤더/피드 API와 팔로우 관련 API는 반영되었습니다.
+### 4.1 댓글 작성 (원댓글/대댓글)
+- **URL**: `/api/posts/{postId}/comments`
+- **Method**: `POST`
+- **Description**: 댓글 또는 대댓글을 작성합니다. `parentId` 유무에 따라 원댓글/대댓글이 결정됩니다.
+- **Authentication**: **필수**
+- **Path Parameters**:
+    - `postId`: 대상 게시물 ID
+- **Request Body** (`CommentCreateRequest`):
+```json
+{
+  "content": "댓글 내용",
+  "parentId": null
+}
+```
+- `parentId`: 원댓글이면 `null` 또는 생략, 대댓글이면 부모 원댓글 ID
+- **Response Body** (`ApiResponse<CommentResponse>`), **HTTP 201**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": 10,
+    "content": "댓글 내용",
+    "member_id": 2,
+    "username": "mamel",
+    "profileImageUrl": "https://example.com/profile/mamel.jpg",
+    "replyCount": 0,
+    "createdAt": "2026-03-25T17:00:00"
+  },
+  "error": null
+}
+```
+- **필드 설명** (`CommentResponse`):
+    - `replyCount`: 원댓글 목록에서만 의미가 있고, 생성 직후 원댓글이면 `0`, 대댓글이면 `null`(응답에서 제외됨)
+- **에러 (예시)**:
+    - **404** — 게시물을 찾을 수 없음 (`P003`)
+    - **404** — 댓글/원댓글 id가 존재하지 않는 경우 (`R001`: 댓글을 찾을 수 없습니다.)
+    - **400** — 대댓글의 parent가 원댓글이 아닌 경우 (`R002`)
+    - **400** — 요청 경로(postId)와 댓글의 게시글이 일치하지 않는 경우 (`R003`)
+
+### 4.2 원댓글 목록 조회
+- **URL**: `/api/posts/{postId}/comments`
+- **Method**: `GET`
+- **Description**: 원댓글 목록을 페이지 단위로 조회하며, 각 항목에 `replyCount`(대댓글 수)를 포함합니다.
+- **Authentication**: **필수**
+- **Query Parameters**:
+    - `page`: 기본값 `1`
+    - `size`: 기본값 `20`
+- **Path Parameters**:
+    - `postId`: 대상 게시물 ID
+- **Response Body** (`ApiResponse<SliceResponse<CommentResponse>>`):
+```json
+{
+  "success": true,
+  "data": {
+    "hasNext": false,
+    "items": [
+      {
+        "id": 10,
+        "content": "원댓글",
+        "member_id": 2,
+        "username": "mamel",
+        "profileImageUrl": "https://example.com/profile/mamel.jpg",
+        "replyCount": 3,
+        "createdAt": "2026-03-25T17:00:00"
+      }
+    ]
+  },
+  "error": null
+}
+```
+- **정렬 기준**:
+    - `createdAt ASC, id ASC`
+
+### 4.3 대댓글 목록 조회 (답글 더보기)
+- **URL**: `/api/posts/{postId}/comments/{rootCommentId}/replies`
+- **Method**: `GET`
+- **Description**: 특정 원댓글의 대댓글 목록을 조회합니다.
+- **Authentication**: **필수**
+- **Query Parameters**:
+    - `page`: 기본값 `1`
+    - `size`: 기본값 `10`
+- **Path Parameters**:
+    - `postId`: 대상 게시물 ID
+    - `rootCommentId`: 원댓글 ID
+- **Response Body** (`ApiResponse<SliceResponse<CommentResponse>>`):
+```json
+{
+  "success": true,
+  "data": {
+    "hasNext": false,
+    "items": [
+      {
+        "id": 20,
+        "content": "대댓글",
+        "member_id": 5,
+        "username": "user5",
+        "profileImageUrl": "https://example.com/profile/user5.jpg",
+        "createdAt": "2026-03-25T17:01:00"
+      }
+    ]
+  },
+  "error": null
+}
+```
+- **필드 설명**:
+    - `replyCount`: 대댓글 목록에서는 `null` → `NON_NULL` 정책으로 응답에서 제외될 수 있습니다.
+
