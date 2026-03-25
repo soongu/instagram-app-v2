@@ -3,7 +3,8 @@
 // 해시태그를 링크로 변환하는 함수
 import {Link} from "react-router-dom";
 
-export const convertHashtagsToJsx = (content) => {
+export const convertHashtagsToJsx = (content, onMentionClick = null) => {
+  if (!content) return null;
   const words = content.split(/(\s+)/);  // 공백을 포함하여 분할
 
   return words.map((word, index) => {
@@ -17,6 +18,22 @@ export const convertHashtagsToJsx = (content) => {
         >
           {word}
         </Link>
+      );
+    }
+    if (word.startsWith('@') && word.length > 1) {
+      const mention = word.substring(1).replace(/[^a-zA-Z0-9_.]/g, ''); // Extract valid username string usually
+      return (
+        <span
+          key={index}
+          className="mention-link"
+          style={{ cursor: 'pointer', color: '#00376b', display: 'inline' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onMentionClick) onMentionClick(mention);
+          }}
+        >
+          {word}
+        </span>
       );
     }
     return word;

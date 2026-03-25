@@ -67,7 +67,7 @@ const PostHeader = ({ user, closeModal }) => {
   return (
     <header className={styles.postHeader}>
       <div className={styles.postUserInfo}>
-        <div className={styles.postProfileImage}>
+        <div className={styles.postProfileImage} onClick={handleUserClick} style={{ cursor: 'pointer' }}>
           <img
             src={user.profileImage ?? user.profileImageUrl}
             alt="Profile"

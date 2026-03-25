@@ -132,6 +132,7 @@ const PostDetailModal = () => {
             postContent={post.content}
             postCreatedAt={post.createdAt}
             onReplyAdded={refreshComments}
+            closeModal={closeModal}
           />
           <PostActions postId={postId} likeStatus={post.likeStatus} />
           {/* 댓글 입력창 */}

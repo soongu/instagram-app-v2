@@ -5,7 +5,7 @@ import { formatDate, convertHashtagsToJsx } from "../../../utils/formatter.jsx";
 import { commentApi } from "../../../services/api.js";
 import { useState } from "react";
 
-const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, onReplyAdded }) => {
+const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, onReplyAdded, closeModal }) => {
   const navigate = useNavigate();
   const [replyTargetId, setReplyTargetId] = useState(null);
   const [replyText, setReplyText] = useState('');
@@ -80,6 +80,7 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
   };
 
   const handleUserClick = (username) => {
+    if (closeModal) closeModal();
     navigate(`/${username}`);
   };
 
@@ -87,7 +88,7 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
     <div className={styles.commentsContainer}>
       {/* 원본 게시글 */}
       <div className={styles.commentItem}>
-        <div className={styles.postProfileImage}>
+        <div className={styles.postProfileImage} onClick={() => handleUserClick(postUser.username)} style={{ cursor: 'pointer' }}>
           <img
             src={postUser.profileImage ?? postUser.profileImageUrl}
             alt="Profile"
@@ -98,7 +99,7 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
             <span className={styles.postUsername} onClick={() => handleUserClick(postUser.username)}>
               {postUser.username}
             </span>
-            <span className={styles.postCaption}>{convertHashtagsToJsx(postContent)}</span>
+            <span className={styles.postCaption}>{convertHashtagsToJsx(postContent, handleUserClick)}</span>
           </div>
           {postCreatedAt ? (
             <div className={styles.postTime}>{formatDate(postCreatedAt)}</div>
@@ -116,7 +117,7 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
         ) : (
           comments.map((comment) => (
             <div key={comment.id} className={styles.commentItem}>
-              <div className={styles.postProfileImage}>
+              <div className={styles.postProfileImage} onClick={() => handleUserClick(comment.username)} style={{ cursor: 'pointer' }}>
                 <img
                   src={comment.userProfileImage ?? comment.profileImageUrl}
                   alt="Profile"
@@ -127,7 +128,7 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
                   <span className={styles.postUsername} onClick={() => handleUserClick(comment.username)}>
                     {comment.username}
                   </span>
-                  <span className={styles.postCaption}>{convertHashtagsToJsx(comment.content)}</span>
+                  <span className={styles.postCaption}>{convertHashtagsToJsx(comment.content, handleUserClick)}</span>
                 </div>
                 <div className={styles.commentTimeAndReply}>
                   {comment.createdAt ? (
@@ -149,7 +150,7 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
 
                 {repliesState[comment.id]?.items?.map((reply) => (
                   <div key={reply.id} className={styles.commentItem} style={{ marginTop: '12px', marginBottom: '12px' }}>
-                    <div className={styles.postProfileImage}>
+                    <div className={styles.postProfileImage} onClick={() => handleUserClick(reply.username)} style={{ cursor: 'pointer' }}>
                       <img
                         src={reply.userProfileImage ?? reply.profileImageUrl}
                         alt="Profile"
@@ -160,7 +161,7 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
                         <span className={styles.postUsername} onClick={() => handleUserClick(reply.username)}>
                           {reply.username}
                         </span>
-                        <span className={styles.postCaption}>{convertHashtagsToJsx(reply.content)}</span>
+                        <span className={styles.postCaption}>{convertHashtagsToJsx(reply.content, handleUserClick)}</span>
                       </div>
                       <div className={styles.commentTimeAndReply}>
                         {reply.createdAt ? (
