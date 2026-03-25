@@ -155,6 +155,40 @@ const PostDetailModal = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, postId]);
 
+  useEffect(() => {
+    if (!isOpen || !post) return;
+
+    const isTypingTarget = (target) => {
+      if (!target) return false;
+      const tagName = target.tagName?.toLowerCase();
+      if (!tagName) return false;
+      if (tagName === 'input' || tagName === 'textarea' || tagName === 'select') return true;
+      // contentEditable 영역(예: 에디터)에서도 네비게이션 방지
+      if (target.isContentEditable) return true;
+      return false;
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.repeat) return; // 키 길게 누를 때 반복 이동 방지
+
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      if (isTypingTarget(e.target)) return;
+
+      if (e.key === 'ArrowLeft' && post.prevPostId) {
+        e.preventDefault();
+        openModal(post.prevPostId, context);
+      }
+
+      if (e.key === 'ArrowRight' && post.nextPostId) {
+        e.preventDefault();
+        openModal(post.nextPostId, context);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, post, openModal, context]);
+
   if (!isOpen || !post) return null;
 
 
