@@ -39,9 +39,9 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
     }
   };
 
-  const startReply = (comment) => {
-    setReplyTargetId(comment.id);
-    setReplyText(`@${comment.username} `);
+  const startReply = (targetComment, rootCommentId) => {
+    setReplyTargetId(rootCommentId);
+    setReplyText(`@${targetComment.username} `);
   };
 
   const submitReply = async (e) => {
@@ -141,7 +141,7 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
                   <button
                     type="button"
                     className={styles.replyButton}
-                    onClick={() => startReply(comment)}
+                    onClick={() => startReply(comment, comment.id)}
                   >
                     답글 달기
                   </button>
@@ -174,7 +174,7 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
                         <button
                           type="button"
                           className={styles.replyButton}
-                          onClick={() => startReply(reply)}
+                          onClick={() => startReply(reply, comment.id)}
                         >
                           답글 달기
                         </button>
@@ -183,7 +183,10 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
                   </div>
                 ))}
 
-                {typeof comment.replyCount === 'number' && comment.replyCount > 0 && repliesState[comment.id]?.hasNext !== false ? (
+                {typeof comment.replyCount === 'number' && 
+                 comment.replyCount > 0 && 
+                 repliesState[comment.id]?.hasNext !== false && 
+                 (comment.replyCount - (repliesState[comment.id]?.items.length || 0)) > 0 ? (
                   <div className={styles.viewRepliesContainer}>
                     <div className={styles.replyLine} />
                     <button className={styles.viewRepliesButton} onClick={() => handleViewReplies(comment)}>
