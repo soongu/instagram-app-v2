@@ -9,6 +9,35 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
   const navigate = useNavigate();
   const [replyTargetId, setReplyTargetId] = useState(null);
   const [replyText, setReplyText] = useState('');
+  const [repliesState, setRepliesState] = useState({});
+
+  const handleViewReplies = async (comment) => {
+    const currentState = repliesState[comment.id] || { items: [], page: 1, hasNext: true, isFirstFetch: true };
+    if (!currentState.hasNext) return;
+
+    try {
+      const size = 3;
+      const res = await commentApi.getReplies(feedId, comment.id, currentState.page, size);
+
+      setRepliesState((prev) => {
+        const merged = [...currentState.items, ...(res.items || [])];
+        const unique = Array.from(new Map(merged.map(item => [item.id, item])).values());
+        unique.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+        return {
+          ...prev,
+          [comment.id]: {
+            items: unique,
+            page: currentState.page + 1,
+            hasNext: res.hasNext,
+            isFirstFetch: false,
+          },
+        };
+      });
+    } catch (error) {
+      console.error('Failed to fetch replies:', error);
+    }
+  };
 
   const startReply = (comment) => {
     setReplyTargetId(comment.id);
@@ -22,10 +51,26 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
     if (!content) return;
 
     try {
-      await commentApi.addComment(feedId, {
+      const newReply = await commentApi.addComment(feedId, {
         content,
         parentId: replyTargetId,
       });
+
+      setRepliesState((prev) => {
+        const prevState = prev[replyTargetId] || { items: [], page: 1, hasNext: true, isFirstFetch: true };
+        const merged = [...prevState.items, newReply];
+        const unique = Array.from(new Map(merged.map(item => [item.id, item])).values());
+        unique.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        
+        return {
+          ...prev,
+          [replyTargetId]: {
+            ...prevState,
+            items: unique,
+          }
+        };
+      });
+
       setReplyTargetId(null);
       setReplyText('');
       await onReplyAdded?.();
@@ -102,11 +147,47 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
                   </button>
                 </div>
 
-                {typeof comment.replyCount === 'number' && comment.replyCount > 0 ? (
+                {repliesState[comment.id]?.items?.map((reply) => (
+                  <div key={reply.id} className={styles.commentItem} style={{ marginTop: '12px', marginBottom: '12px' }}>
+                    <div className={styles.postProfileImage}>
+                      <img
+                        src={reply.userProfileImage ?? reply.profileImageUrl}
+                        alt="Profile"
+                      />
+                    </div>
+                    <div className={styles.commentContent}>
+                      <div>
+                        <span className={styles.postUsername} onClick={() => handleUserClick(reply.username)}>
+                          {reply.username}
+                        </span>
+                        <span className={styles.postCaption}>{convertHashtagsToJsx(reply.content)}</span>
+                      </div>
+                      <div className={styles.commentTimeAndReply}>
+                        {reply.createdAt ? (
+                          <div className={styles.postTime}>{formatDate(reply.createdAt)}</div>
+                        ) : (
+                          <div className={styles.postTime} />
+                        )}
+                        {typeof reply.likeCount === 'number' && reply.likeCount > 0 && (
+                          <div className={styles.commentLikes}>좋아요 {reply.likeCount}개</div>
+                        )}
+                        <button
+                          type="button"
+                          className={styles.replyButton}
+                          onClick={() => startReply(reply)}
+                        >
+                          답글 달기
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {typeof comment.replyCount === 'number' && comment.replyCount > 0 && repliesState[comment.id]?.hasNext !== false ? (
                   <div className={styles.viewRepliesContainer}>
                     <div className={styles.replyLine} />
-                    <button className={styles.viewRepliesButton}>
-                      답글 보기({comment.replyCount}개)
+                    <button className={styles.viewRepliesButton} onClick={() => handleViewReplies(comment)}>
+                      답글 보기({comment.replyCount - (repliesState[comment.id]?.items.length || 0)}개)
                     </button>
                   </div>
                 ) : null}

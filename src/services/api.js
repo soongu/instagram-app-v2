@@ -156,7 +156,7 @@ export const postApi = {
   getPost: (postId, context) => api.get(`/posts/${postId}${context ? `?context=${context}` : ''}`),
 
   // 원댓글 목록 조회(대댓글은 별도 엔드포인트)
-  getPostComments: (postId, page = 1, size = 20) =>
+  getPostComments: (postId, page = 1, size = 10) =>
     api.get(`/posts/${postId}/comments?page=${page}&size=${size}`),
 
   // 게시물 생성 (멀티파트 폼 데이터)
@@ -183,6 +183,8 @@ export const likeApi = {
 // 댓글 관련 API
 export const commentApi = {
   addComment: (feedId, payload) => api.post(`/posts/${feedId}/comments`, payload),
+  getReplies: (postId, rootCommentId, page = 1, size = 10) =>
+    api.get(`/posts/${postId}/comments/${rootCommentId}/replies?page=${page}&size=${size}`),
 };
 
 // 팔로우 관련 API
