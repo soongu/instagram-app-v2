@@ -5,7 +5,7 @@ import { formatDate, convertHashtagsToJsx } from "../../../utils/formatter.jsx";
 import { commentApi } from "../../../services/api.js";
 import { useState } from "react";
 
-const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, onReplyAdded, closeModal }) => {
+const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, onReplyAdded, closeModal, hasMoreComments, onLoadMoreComments }) => {
   const navigate = useNavigate();
   const [replyTargetId, setReplyTargetId] = useState(null);
   const [replyText, setReplyText] = useState('');
@@ -217,6 +217,17 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
               </div>
             </div>
           ))
+        )}
+        
+        {hasMoreComments && (
+          <div className={styles.loadMoreContainer}>
+            <button type="button" className={styles.loadMoreButton} onClick={onLoadMoreComments}>
+              <svg aria-label="댓글 더 보기" fill="currentColor" height="28" role="img" viewBox="0 0 24 24" width="28">
+                <circle cx="12" cy="12" fill="none" r="11" stroke="currentColor" strokeWidth="2"></circle>
+                <path d="M12 6v12M6 12h12" fill="none" stroke="currentColor" strokeWidth="2"></path>
+              </svg>
+            </button>
+          </div>
         )}
       </div>
 

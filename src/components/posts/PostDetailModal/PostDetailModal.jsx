@@ -17,6 +17,8 @@ import CommentForm from "../../common/Comment/CommentForm.jsx";
 const PostDetailModal = () => {
   const { isOpen, postId, closeModal } = usePostModal();
   const [post, setPost] = useState(null);
+  const [commentsPage, setCommentsPage] = useState(1);
+  const [commentsHasNext, setCommentsHasNext] = useState(false);
   const dispatch = useDispatch();
   const reduxLikeState = useSelector(state => state.likes.likes[postId]);
   const likeState = reduxLikeState ?? post?.likeStatus ?? { liked: false, likeCount: 0 };
@@ -39,7 +41,8 @@ const PostDetailModal = () => {
   const refreshComments = useCallback(async () => {
     if (!postId || !isOpen) return;
     try {
-      const commentsRes = await postApi.getPostComments(postId, 1, 20);
+      setCommentsPage(1);
+      const commentsRes = await postApi.getPostComments(postId, 1, 10);
       const items = commentsRes?.items ?? [];
       const mappedComments = items.map((c) => ({
         id: c.id,
@@ -50,11 +53,35 @@ const PostDetailModal = () => {
         replyCount: c.replyCount,
       }));
 
+      setCommentsHasNext(commentsRes?.hasNext ?? false);
       setPost(prev => (prev ? { ...prev, comments: mappedComments } : prev));
     } catch (error) {
       console.error('Failed to fetch post comments:', error);
     }
   }, [postId, isOpen]);
+
+  const loadMoreComments = async () => {
+    if (!commentsHasNext || !postId) return;
+    try {
+      const nextPage = commentsPage + 1;
+      const commentsRes = await postApi.getPostComments(postId, nextPage, 10);
+      const items = commentsRes?.items ?? [];
+      const newMapped = items.map((c) => ({
+        id: c.id,
+        content: c.content,
+        username: c.username,
+        userProfileImage: c.profileImageUrl,
+        createdAt: c.createdAt,
+        replyCount: c.replyCount,
+      }));
+
+      setCommentsHasNext(commentsRes?.hasNext ?? false);
+      setCommentsPage(nextPage);
+      setPost(prev => (prev ? { ...prev, comments: [...prev.comments, ...newMapped] } : prev));
+    } catch (error) {
+      console.error('Failed to fetch more comments:', error);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) {
@@ -133,6 +160,8 @@ const PostDetailModal = () => {
             postCreatedAt={post.createdAt}
             onReplyAdded={refreshComments}
             closeModal={closeModal}
+            hasMoreComments={commentsHasNext}
+            onLoadMoreComments={loadMoreComments}
           />
           <PostActions postId={postId} likeStatus={post.likeStatus} />
           {/* 댓글 입력창 */}
