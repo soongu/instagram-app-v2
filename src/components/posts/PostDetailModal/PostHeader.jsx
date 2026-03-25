@@ -15,7 +15,10 @@ const PostHeader = ({ user, closeModal }) => {
     <header className={styles.postHeader}>
       <div className={styles.postUserInfo}>
         <div className={styles.postProfileImage}>
-          <img src={user.profileImage} alt="Profile" />
+          <img
+            src={user.profileImage ?? user.profileImageUrl}
+            alt="Profile"
+          />
         </div>
         <span className={styles.postUsername} onClick={handleUserClick}>
           {user.username}

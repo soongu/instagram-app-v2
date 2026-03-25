@@ -38,10 +38,13 @@ const PostDetailModal = () => {
 
   // 기존 댓글에 추가 댓글 렌더링
   const addComment = (newComment) => {
-    setPost(prev => ({
-      ...prev,
-      comments: [...prev.comments, newComment]
-    }));
+    setPost(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        comments: [...(prev.comments ?? []), newComment],
+      };
+    });
   };
 
   useEffect(() => {
@@ -50,22 +53,66 @@ const PostDetailModal = () => {
       return;
     }
     if (postId) {
-      const fetchPost = async () => {
+      let isCancelled = false;
+
+      const fetchData = async () => {
         try {
           // 인터셉터가 이미 data만 반환 → response가 곧 게시물 객체
-          const response = await postApi.getPost(postId);
+          const response = await postApi.getPost(postId, 'feed');
           const reduxLike = store.getState().likes.likes[postId];
-          // API에 likeStatus 없을 수 있음(프로필 등) → Redux 캐시로 보강해 피드·모달 동기화
-          setPost({
-            ...response,
+
+          const normalizedPost = {
+            // 화면용 필드(기존 컴포넌트 계약에 맞춤)
+            postId: response.postId ?? postId,
+            content: response.content ?? '',
+            images: (response.imageUrls ?? []).map((imageUrl) => ({ imageUrl })),
+            user: response.writer
+              ? {
+                  username: response.writer.username,
+                  profileImage: response.writer.profileImageUrl,
+                }
+              : { username: '', profileImage: undefined },
+            comments: [],
+            // 스펙상 createdAt가 없을 수 있음. PostComments에서 가드 처리.
+            createdAt: undefined,
+            prevPostId: response.prevPostId ?? null,
+            nextPostId: response.nextPostId ?? null,
             likeStatus: response.likeStatus ?? reduxLike ?? { liked: false, likeCount: 0 },
-          });
+          };
+
+          if (!isCancelled) setPost(normalizedPost);
+
+          // 댓글은 별도 엔드포인트에서 조회
+          try {
+            const commentsRes = await postApi.getPostComments(postId, 1, 20);
+            const items = commentsRes?.items ?? [];
+            const mappedComments = items.map((c) => ({
+              id: c.id,
+              content: c.content,
+              username: c.username,
+              userProfileImage: c.profileImageUrl,
+              createdAt: c.createdAt,
+              replyCount: c.replyCount,
+            }));
+
+            if (!isCancelled) {
+              setPost(prev => (prev ? { ...prev, comments: mappedComments } : prev));
+            }
+          } catch (error) {
+            console.error('Failed to fetch post comments:', error);
+          }
         } catch (error) {
           console.error('Failed to fetch post details:', error);
         }
       };
-      fetchPost();
+
+      fetchData();
+
+      return () => {
+        isCancelled = true;
+      };
     }
+    return undefined;
   }, [isOpen, postId]);
 
   if (!isOpen || !post) return null;

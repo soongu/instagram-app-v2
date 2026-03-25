@@ -152,7 +152,12 @@ export const postApi = {
   getPostsByHashtag: (hashtag) => api.get(`/hashtags/${hashtag}/posts`),
 
   // 개별 게시물 상세 정보 가져오기 (모달용)
-  getPost: (postId) => api.get(`/posts/${postId}`),
+  // context="profile"일 때만 prevPostId/nextPostId가 채워질 수 있음
+  getPost: (postId, context) => api.get(`/posts/${postId}${context ? `?context=${context}` : ''}`),
+
+  // 원댓글 목록 조회(대댓글은 별도 엔드포인트)
+  getPostComments: (postId, page = 1, size = 20) =>
+    api.get(`/posts/${postId}/comments?page=${page}&size=${size}`),
 
   // 게시물 생성 (멀티파트 폼 데이터)
   createPost: (formData) => api.post(`/posts`, formData, {

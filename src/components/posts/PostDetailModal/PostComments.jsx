@@ -15,7 +15,10 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt }) => {
       {/* 원본 게시글 */}
       <div className={styles.commentItem}>
         <div className={styles.postProfileImage}>
-          <img src={postUser.profileImage} alt="Profile" />
+          <img
+            src={postUser.profileImage ?? postUser.profileImageUrl}
+            alt="Profile"
+          />
         </div>
         <div className={styles.commentContent}>
           <div>
@@ -24,7 +27,9 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt }) => {
             </span>
             <span className={styles.postCaption}>{convertHashtagsToJsx(postContent)}</span>
           </div>
-          <div className={styles.postTime}>{formatDate(postCreatedAt)}</div>
+          {postCreatedAt ? (
+            <div className={styles.postTime}>{formatDate(postCreatedAt)}</div>
+          ) : null}
         </div>
       </div>
 
@@ -39,14 +44,19 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt }) => {
           comments.map((comment) => (
             <div key={comment.id} className={styles.commentItem}>
               <div className={styles.postProfileImage}>
-                <img src={comment.userProfileImage} alt="Profile" />
+                <img
+                  src={comment.userProfileImage ?? comment.profileImageUrl}
+                  alt="Profile"
+                />
               </div>
               <div className={styles.commentContent}>
                 <span className={styles.postUsername} onClick={() => handleUserClick(comment.username)}>
                   {comment.username}
                 </span>
                 <span className={styles.postCaption}>{convertHashtagsToJsx(comment.content)}</span>
-                <div className={styles.postTime}>{formatDate(comment.createdAt)}</div>
+                {comment.createdAt ? (
+                  <div className={styles.postTime}>{formatDate(comment.createdAt)}</div>
+                ) : null}
               </div>
             </div>
           ))
