@@ -4,7 +4,7 @@ import { usePostModal } from '../../hooks/usePostModal';
 import { FaHeart, FaComment } from 'react-icons/fa6';
 import {useSelector} from "react-redux";
 
-const PostGridItem = ({ post }) => {
+const PostGridItem = ({ post, postModalContext = 'profile' }) => {
   const { openModal } = usePostModal();
   // 프로필/피드 API 응답 키가 다를 수 있어, 상세조회에 맞는 값을 우선으로 선택
   // (프로필 grid은 id만 주기도 하지만, feed_id가 함께 오거나 id가 상세조회용이 아닐 수도 있음)
@@ -15,7 +15,7 @@ const PostGridItem = ({ post }) => {
       console.warn('PostGridItem: missing postId for modal open', { post });
       return;
     }
-    openModal(postId, 'profile');
+    openModal(postId, postModalContext);
   };
   const thumbnailUrl = post.thumbnailUrl ?? post.mainThumbnail ?? post.images?.[0]?.imageUrl ?? '';
   const hasMultipleImages = post.multipleImages ?? (post.images?.length > 1);

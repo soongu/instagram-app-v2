@@ -2,6 +2,8 @@
 
 // 해시태그를 링크로 변환하는 함수
 import {Link} from "react-router-dom";
+import { store } from "../store/index";
+import { closePostModal } from "../store/postModalSlice";
 
 export const convertHashtagsToJsx = (content, onMentionClick = null) => {
   if (!content) return null;
@@ -13,8 +15,14 @@ export const convertHashtagsToJsx = (content, onMentionClick = null) => {
       return (
         <Link
           key={index}
-          to={`/explore/search/keyword/?q=${hashtag}`}
+          to={`/explore/search/keyword?q=${encodeURIComponent(`#${hashtag}`)}`}
           className="hashtag-link"
+          onClick={(e) => {
+            // 모달이 열린 상태에서 해시태그를 클릭하면, 라우팅 전에 모달을 먼저 닫습니다.
+            // (라우트 전환 시 기존 모달이 언마운트되며 "라우트 변경 감지"를 놓칠 수 있음)
+            e.stopPropagation();
+            store.dispatch(closePostModal());
+          }}
         >
           {word}
         </Link>

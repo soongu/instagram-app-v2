@@ -6,6 +6,7 @@ import SignupPage from "../pages/auth/SignupPage.jsx";
 import AuthRequired from "./AuthRequired.jsx";
 import AuthPage from "../pages/auth/AuthPage.jsx";
 import ProfilePage from "../pages/profile/ProfilePage.jsx";
+import HashtagSearchPage from "../pages/hashtag/HashtagSearchPage.jsx";
 import {profileApi} from "../services/api.js";
 
 const router = createHashRouter([
@@ -16,6 +17,10 @@ const router = createHashRouter([
       {
         index: true,
         element: <AuthPage/>
+      },
+      {
+        path: 'explore/search/keyword',
+        element: <HashtagSearchPage/>,
       },
       {
         path: ':username',

@@ -43,6 +43,10 @@ Base URL: `/api`
     - `M007`: 유요하지 않은 토큰입니다. (서명 위조 등)
     - `M008`: 만료된 토큰입니다. (Access Token 만료)
     - `P003`: 게시물을 찾을 수 없습니다. (존재하지 않는 `postId` 등)
+    - `H001`: 해시태그를 찾을 수 없습니다. (존재하지 않는 정규화된 태그명 등)
+    - `H002`: 허용되지 않는 해시태그 형식입니다.
+    - `H003`: 게시물에 붙일 수 있는 해시태그 개수를 초과했습니다.
+    - `H004`: 해시태그 이름이 너무 깁니다.
 
 ---
 
@@ -196,7 +200,8 @@ Base URL: `/api`
             "liked": false,
             "likeCount": 0
         },
-        "commentCount": 0
+        "commentCount": 0,
+        "hashtagNames": ["맛집", "카페"]
       }
     ]
   },
@@ -205,6 +210,7 @@ Base URL: `/api`
 ```
 - `likeStatus.liked`: 로그인한 사용자가 해당 글에 좋아요했으면 `true` (피드 조회 시 QueryDSL `EXISTS(post_like)` 한 쿼리로 계산).
 - `likeStatus.likeCount`: 게시물 비정규화 좋아요 수.
+- `hashtagNames` (`string[]`): 해당 게시물 본문에서 추출·저장된 **정규화된** 해시태그 이름 목록(표시 순서는 서버 구현에 따름). 태그가 없으면 빈 배열 `[]`.
 
 ### 2.2 게시물 생성
 - **URL**: `/api/posts`
@@ -225,6 +231,7 @@ Base URL: `/api`
   "error": null
 }
 ```
+- **해시태그**: `feed.content` 안의 `#태그` 패턴은 저장 시 파싱되어 `Hashtag` / `PostHashtag` 로 동기화됩니다. 개수·길이 제한 위반 시 **400** (`H003`, `H004` 등).
 
 ### 2.3 좋아요 토글 (Toggle Like)
 - **URL**: `/api/posts/{postId}/likes`
@@ -289,7 +296,8 @@ Base URL: `/api`
       "likeCount": 12
     },
     "prevPostId": null,
-    "nextPostId": null
+    "nextPostId": null,
+    "hashtagNames": ["맛집", "카페"]
   },
   "error": null
 }
@@ -300,15 +308,18 @@ Base URL: `/api`
     - `createdAt`: 게시물 생성 시간
     - `likeStatus`: 로그인 유저 기준 좋아요 상태(`liked`, `likeCount`)
     - `prevPostId` / `nextPostId`: `context="profile"`일 때만 이전/다음 글 ID, 그 외에는 `null`
+    - `hashtagNames` (`string[]`): 해당 게시물에 연결된 정규화된 해시태그 이름 목록. 없으면 `[]`.
 - **에러 (예시)**:
     - **404** — `postId`에 해당 게시물이 없는 경우 (`P003`: 게시물을 찾을 수 없습니다.)
 
-### 2.5 피드·프로필 그리드와 좋아요 필드 (참고)
-| API | 좋아요 관련 필드 | 설명 |
-|-----|------------------|------|
+### 2.5 피드·프로필 그리드와 좋아요·해시태그 필드 (참고)
+| API | 좋아요·해시태그 관련 필드 | 설명 |
+|-----|--------------------------|------|
 | `GET /api/posts` (피드) | `items[].likeStatus.liked` | 로그인 사용자가 그 글에 좋아요했는지 (QueryDSL EXISTS 1쿼리) |
 | `GET /api/posts` (피드) | `items[].likeStatus.likeCount` | 게시물 비정규화 좋아요 수 |
+| `GET /api/posts` (피드) | `items[].hashtagNames` | 해당 글에 붙은 정규화된 태그명 배열 |
 | `GET /api/profiles/{username}/posts` (프로필) | `items[].likeCount` | 동일 비정규화 값 (`liked` 없음) |
+| `GET /api/hashtags/{name}/posts` | — | 그리드용 `ProfilePostResponse`만 반환(썸네일·수치). 태그 목록은 피드/상세 `PostResponse`·`PostDetailResponse` 참고 |
 
 ---
 
@@ -630,4 +641,71 @@ Base URL: `/api`
 ```
 - **필드 설명**:
     - `replyCount`: 대댓글 목록에서는 `null` → `NON_NULL` 정책으로 응답에서 제외될 수 있습니다.
+
+---
+
+## 5. Hashtag (`/hashtags`)
+
+해시태그 전용 API의 베이스 경로는 `/api/hashtags` 입니다. (게시물 본문의 `#태그` 파싱·저장은 **게시물 작성** 흐름에서 처리되며, 피드·상세 응답의 `hashtagNames` 는 **2.1 피드 조회**, **2.4 피드 상세 조회** 절을 참고하세요.)
+
+### 5.1 특정 해시태그가 붙은 게시물 목록 (그리드·무한 스크롤)
+- **URL**: `/api/hashtags/{name}/posts`
+- **Method**: `GET`
+- **Description**: **정규화된** 해시태그 이름(`name`)이 붙은 게시물을 **프로필 그리드**와 동일한 `ProfilePostResponse` 슬라이스로 조회합니다. 정렬은 서버에서 **`id` 내림차순** 고정입니다.
+- **Path Parameters**:
+    - `name`: 조회할 해시태그 이름(서버 저장 형식과 동일하게, 예: 소문자 `맛집`)
+- **Query Parameters**:
+    - `page`: 페이지 번호 (기본값: `1`)
+    - `size`: 페이지 크기 (기본값: `12`)
+- **Authentication**: 인증 필수.
+- **Response Body** (`ApiResponse<SliceResponse<ProfilePostResponse>>`):
+```json
+{
+  "success": true,
+  "data": {
+    "hasNext": false,
+    "items": [
+      {
+        "post_id": 101,
+        "thumbnailUrl": "https://example.com/thumb.jpg",
+        "multipleImages": true,
+        "likeCount": 5,
+        "commentCount": 2
+      }
+    ]
+  },
+  "error": null
+}
+```
+- **에러 (예시)**:
+    - **404** — 해당 이름의 해시태그가 존재하지 않음 (`H001`: 해시태그를 찾을 수 없습니다.)
+
+### 5.2 해시태그 추천 (Top N)
+- **URL**: `/api/hashtags/suggestions`
+- **Method**: `GET`
+- **Description**: 작성 화면 등에서 쓸 **추천 해시태그** 목록을 반환합니다. `postCount` 내림차순 등 서비스 랭킹 규칙에 따릅니다.
+- **Query Parameters**:
+    - `prefix`: 선택. 이름 **접두사**로 필터(예: `맛` → `맛집` 계열만).
+    - `limit`: 최대 개수 (기본값: `5`)
+- **Authentication**: 팀 정책에 따름.
+- **Response Body** (`ApiResponse<List<HashtagMetaResponse>>`):
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "hashtagName": "맛집",
+      "postCount": 120
+    },
+    {
+      "hashtagName": "카페",
+      "postCount": 88
+    }
+  ],
+  "error": null
+}
+```
+- **필드 설명** (`HashtagMetaResponse`):
+    - `hashtagName` (`string`): 표시·검색에 쓰는 태그 이름(정규화된 값).
+    - `postCount` (`long`): 해당 태그가 붙은 게시물 수.
 

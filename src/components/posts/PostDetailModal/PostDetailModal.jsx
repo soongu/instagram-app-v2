@@ -1,5 +1,5 @@
 // src/components/posts/PostDetailModal.jsx
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { usePostModal } from '../../../hooks/usePostModal';
 import { likeApi, postApi } from '../../../services/api';
 import styles from './PostDetailModal.module.scss';
@@ -8,6 +8,7 @@ import Carousel from '../../common/Carousel/Carousel';
 import PostHeader from './PostHeader';
 import PostComments from './PostComments';
 import PostActions from './PostActions';
+import { useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from "react-redux";
 import { updateLikeStatus, setLikePending, clearLikePending } from "../../../store/likeSlice.js";
 import { showToast } from "../../../store/toastSlice.js";
@@ -21,6 +22,8 @@ const PostDetailModal = () => {
   const [commentsHasNext, setCommentsHasNext] = useState(false);
   const [isCommentsLoading, setIsCommentsLoading] = useState(false);
   const dispatch = useDispatch();
+  const location = useLocation();
+  const lastLocationRef = useRef(null);
   const reduxLikeState = useSelector(state => state.likes.likes[postId]);
   const likeState = reduxLikeState ?? post?.likeStatus ?? { liked: false, likeCount: 0 };
   const isToggling = useSelector(state => !!state.likes.pendingPostIds[postId]);
@@ -188,6 +191,28 @@ const PostDetailModal = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, post, openModal, context]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const current = `${location.pathname}${location.search}`;
+    if (lastLocationRef.current === null) {
+      // 모달이 처음 열린 시점의 location을 기록 (마운트에서 바로 닫히는 현상 방지)
+      lastLocationRef.current = current;
+      return;
+    }
+
+    if (lastLocationRef.current !== current) {
+      // 모달이 열린 상태에서 라우트가 변경되면(예: 해시태그/프로필 링크 클릭) 모달을 자동으로 닫습니다.
+      closeModal();
+      lastLocationRef.current = current;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, location.search, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) lastLocationRef.current = null;
+  }, [isOpen]);
 
   if (!isOpen || !post) return null;
 
