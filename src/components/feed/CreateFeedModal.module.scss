@@ -435,6 +435,11 @@
     align-items: center;
     cursor: pointer;
     transition: background-color 0.2s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font: inherit;
 
     &:hover {
       background-color: #fafafa;

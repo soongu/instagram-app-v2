@@ -1,11 +1,9 @@
 // src/components/feed/FeedList/FeedList.jsx
 import {useEffect, useRef, useState} from 'react';
-import { useDispatch } from "react-redux";
+import { useLocation, useNavigate } from 'react-router-dom';
 import styles from './FeedList.module.scss';
 import {feedApi} from "../../services/api.js";
 import FeedItem from "./FeedItem/FeedItem.jsx";
-import { updateLikeStatus } from "../../store/likeSlice.js";
-import { incrementCommentCount } from "../../store/commentSlice.js";
 
 const FeedSkeleton = () => (
   <div className={styles.skeletonPost}>
@@ -27,38 +25,62 @@ const FeedSkeleton = () => (
 );
 
 const FeedList = () => {
-  const dispatch = useDispatch();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasNext, setHasNext] = useState(true);
   const [page, setPage] = useState(1);
+  const [fetchEpoch, setFetchEpoch] = useState(0);
   const observerRef = useRef(null);
+  const pendingRefreshRef = useRef(false);
+
+  useEffect(() => {
+    if (!location.state?.refreshFeed) return;
+    pendingRefreshRef.current = true;
+    setPosts([]);
+    setPage(1);
+    setHasNext(true);
+    setFetchEpoch((e) => e + 1);
+    navigate('.', { replace: true, state: {} });
+  }, [location.state, navigate]);
 
   useEffect(() => {
     if (!hasNext) {
       return;
     }
 
-    const fetchPosts = async () => {
+    let cancelled = false;
 
+    const fetchPosts = async () => {
       setIsLoading(true);
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (cancelled) return;
 
       try {
         const response = await feedApi.getFeedPosts(page);
+        if (cancelled) return;
         const nextItems = response?.items ?? response?.feedList ?? [];
-        setPosts(prev => [...prev, ...nextItems]);
+        const shouldReplace = pendingRefreshRef.current && page === 1;
+        if (shouldReplace) {
+          pendingRefreshRef.current = false;
+        }
+        setPosts((prev) => (shouldReplace ? nextItems : [...prev, ...nextItems]));
         setHasNext(response?.hasNext ?? false);
       } catch (error) {
         console.error('Failed to fetch posts:', error);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     fetchPosts();
-  }, [page, hasNext, dispatch]);
+    return () => {
+      cancelled = true;
+      setIsLoading(false);
+    };
+  }, [page, hasNext, fetchEpoch]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

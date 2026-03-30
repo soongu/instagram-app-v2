@@ -170,8 +170,9 @@ export const postApi = {
 
 // 해시태그 관련 API 추가
 export const hashtagApi = {
-  // 해시태그 검색
-  searchHashtags: (keyword) => api.get(`/hashtags/search?keyword=${keyword}`),
+  /** @returns {Promise<Array<{ hashtagName: string, postCount: number }>>} */
+  getSuggestions: (prefix, limit = 10) =>
+    api.get(`/hashtags/suggestions?prefix=${encodeURIComponent(prefix)}&limit=${limit}`),
 };
 
 // 좋아요 관련 API 추가

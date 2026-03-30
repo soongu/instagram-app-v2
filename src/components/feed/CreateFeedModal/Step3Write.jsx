@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FaChevronRight } from 'react-icons/fa6';
 import { hashtagApi } from '../../../services/api';
 import Carousel from '../../common/Carousel/Carousel';
@@ -6,6 +6,9 @@ import styles from '../CreateFeedModal.module.scss';
 import defaultProfileImage from '../../../assets/images/default-profile.svg';
 
 const MAX_CONTENT_LENGTH = 2200;
+const HASHTAG_PREFIX_MIN_LEN = 2;
+const SUGGEST_DEBOUNCE_MS = 300;
+const SUGGEST_LIMIT = 10;
 
 const Step3Write = ({ files, user, content, onContentChange, filterStyle }) => {
   const textareaRef = useRef(null);
@@ -14,6 +17,14 @@ const Step3Write = ({ files, user, content, onContentChange, filterStyle }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [hashtagRange, setHashtagRange] = useState({ start: 0, end: 0 });
   const searchTimeoutRef = useRef(null);
+  const fetchSeqRef = useRef(0);
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(searchTimeoutRef.current);
+      fetchSeqRef.current += 1;
+    };
+  }, []);
 
   const handleInput = (e) => {
     let val = e.target.value;
@@ -32,20 +43,31 @@ const Step3Write = ({ files, user, content, onContentChange, filterStyle }) => {
 
       clearTimeout(searchTimeoutRef.current);
 
-      if (keyword) {
-        searchTimeoutRef.current = setTimeout(async () => {
-          try {
-            const res = await hashtagApi.searchHashtags(keyword);
-            setSuggestions(res || []);
-            setShowSuggestions(true);
-          } catch {
-            setShowSuggestions(false);
-          }
-        }, 300);
-      } else {
+      if (keyword.length < HASHTAG_PREFIX_MIN_LEN) {
+        fetchSeqRef.current += 1;
+        setSuggestions([]);
         setShowSuggestions(false);
+        return;
       }
+
+      const seq = ++fetchSeqRef.current;
+      searchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const res = await hashtagApi.getSuggestions(keyword, SUGGEST_LIMIT);
+          if (seq !== fetchSeqRef.current) return;
+          const list = Array.isArray(res) ? res : [];
+          setSuggestions(list);
+          setShowSuggestions(list.length > 0);
+        } catch {
+          if (seq !== fetchSeqRef.current) return;
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
+      }, SUGGEST_DEBOUNCE_MS);
     } else {
+      clearTimeout(searchTimeoutRef.current);
+      fetchSeqRef.current += 1;
+      setSuggestions([]);
       setShowSuggestions(false);
     }
   };
@@ -55,6 +77,8 @@ const Step3Write = ({ files, user, content, onContentChange, filterStyle }) => {
     const afterHashtag = content.substring(hashtagRange.end);
     const newText = `${beforeHashtag}#${tagName} ${afterHashtag}`;
     onContentChange(newText);
+    fetchSeqRef.current += 1;
+    setSuggestions([]);
     setShowSuggestions(false);
     textareaRef.current?.focus();
   };
@@ -71,7 +95,10 @@ const Step3Write = ({ files, user, content, onContentChange, filterStyle }) => {
         <div className={styles.writeArea}>
           <div className={styles.userInfo}>
             <div className={styles.profileImage}>
-              <img src={user?.profileImageUrl || defaultProfileImage} alt="프로필" />
+              <img
+                src={user?.profileImage ?? user?.profileImageUrl ?? defaultProfileImage}
+                alt="프로필"
+              />
             </div>
             <span className={styles.username}>{user?.username || '사용자명'}</span>
           </div>
@@ -89,18 +116,23 @@ const Step3Write = ({ files, user, content, onContentChange, filterStyle }) => {
             </div>
 
             {showSuggestions && suggestions.length > 0 && (
-              <div className={styles.hashtagSuggestions}>
-                {suggestions.map((tag, idx) => (
-                  <div
-                    key={idx}
+              <div className={styles.hashtagSuggestions} role="listbox" aria-label="추천 해시태그">
+                {suggestions.map((tag) => (
+                  <button
+                    key={tag.hashtagName}
+                    type="button"
+                    role="option"
                     className={styles.hashtagItem}
-                    onClick={() => insertHashtag(tag.hashtag)}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => insertHashtag(tag.hashtagName)}
                   >
                     <div className={styles.hashtagInfo}>
-                      <span className={styles.hashtagName}>#{tag.hashtag}</span>
-                      <span className={styles.postCount}>게시물 {tag.feedCount}개</span>
+                      <span className={styles.hashtagName}>#{tag.hashtagName}</span>
+                      <span className={styles.postCount}>
+                        게시물 {Number(tag.postCount ?? 0).toLocaleString()}개
+                      </span>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}

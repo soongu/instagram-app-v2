@@ -687,7 +687,7 @@ Base URL: `/api`
 - **Query Parameters**:
     - `prefix`: 선택. 이름 **접두사**로 필터(예: `맛` → `맛집` 계열만).
     - `limit`: 최대 개수 (기본값: `5`)
-- **Authentication**: 팀 정책에 따름.
+- **Authentication**: 필수
 - **Response Body** (`ApiResponse<List<HashtagMetaResponse>>`):
 ```json
 {

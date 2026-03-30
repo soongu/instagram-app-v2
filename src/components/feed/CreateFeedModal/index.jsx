@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { FaXmark } from 'react-icons/fa6';
 import { closeCreateFeedModal } from '../../../store/createFeedModalSlice';
@@ -13,6 +14,7 @@ import DiscardModal from './DiscardModal';
 import styles from '../CreateFeedModal.module.scss';
 
 const CreateFeedModal = () => {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const isOpen = useSelector((state) => state.createFeedModal?.isOpen);
   const user = useSelector((state) => state.auth?.user);
@@ -94,7 +96,7 @@ const CreateFeedModal = () => {
 
         await postApi.createPost(formData);
         dispatch(closeCreateFeedModal());
-        window.location.reload();
+        navigate('/', { replace: true, state: { refreshFeed: true } });
       } catch (error) {
         console.error('Failed to create post:', error);
         dispatch(showToast({ message: error.response?.data?.message || '게시물 생성에 실패했습니다.', type: 'error' }));
