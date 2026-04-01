@@ -102,6 +102,8 @@ api.interceptors.response.use(
   }
 );
 
+let globalReissuePromise = null;
+
 // 인증 관련 API
 export const authApi = {
   // 이메일 중복 확인
@@ -114,7 +116,15 @@ export const authApi = {
   login: (credentials) => api.post('/auth/login', credentials),
 
   // 토큰 재발급 요청 (Silent Refresh)
-  reissue: () => api.post('/auth/reissue', {}, { withCredentials: true }),
+  reissue: () => {
+    if (!globalReissuePromise) {
+      globalReissuePromise = api.post('/auth/reissue', {}, { withCredentials: true })
+        .finally(() => {
+          globalReissuePromise = null;
+        });
+    }
+    return globalReissuePromise;
+  },
 
   // 로그아웃 요청
   logout: () => api.post('/auth/logout'),

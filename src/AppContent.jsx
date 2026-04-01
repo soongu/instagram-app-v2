@@ -6,7 +6,7 @@ import { clearToken, setUser, refreshAccessToken } from './store/authSlice.js';
 import AppRoutes from './routes/AppRoutes';
 import GlobalToast from './components/common/GlobalToast';
 
-let isReissuingInit = false;
+let isReissuingPromise = null;
 
 const AppContent = () => {
   const dispatch = useDispatch();
@@ -18,50 +18,56 @@ const AppContent = () => {
     const initAuth = async () => {
       const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
       if (isLoggedIn) {
-        // StrictMode 등에서 중복 호출 방지
-        if (isReissuingInit) {
-          setIsInit(true);
-          return;
+        if (!isReissuingPromise) {
+          isReissuingPromise = (async () => {
+            try {
+              const lastRefreshTime = sessionStorage.getItem('lastRefreshTime');
+              const now = Date.now();
+              if (lastRefreshTime && now - parseInt(lastRefreshTime) < 2000) {
+                 console.log('[App 초기화] 너무 잦은 새로고침 감지. 2초 대기 후 시도...');
+                 await new Promise(resolve => setTimeout(resolve, 2000));
+              }
+              sessionStorage.setItem('lastRefreshTime', now.toString());
+              
+              console.log('[App 초기화] 기존 로그인 유저, Silent Refresh 시도...');
+              const response = await authApi.reissue();
+              return { success: true, accessToken: response.accessToken };
+            } catch (error) {
+              return { success: false, error };
+            } finally {
+              isReissuingPromise = null;
+            }
+          })();
         }
-        isReissuingInit = true;
         
-        try {
-          // 새로고침 연타 시 방어 (Backend RTR 동시성 이슈 완화)
-          const lastRefreshTime = sessionStorage.getItem('lastRefreshTime');
-          const now = Date.now();
-          if (lastRefreshTime && now - parseInt(lastRefreshTime) < 2000) {
-             console.log('[App 초기화] 너무 잦은 새로고침 감지. 2초 대기 후 시도...');
-             await new Promise(resolve => setTimeout(resolve, 2000));
-          }
-          sessionStorage.setItem('lastRefreshTime', now.toString());
-          
-          console.log('[App 초기화] 기존 로그인 유저, Silent Refresh 시도...');
-          const response = await authApi.reissue();
-          if (isMounted) {
-            console.log('[App 초기화] Silent Refresh 성공:', response.accessToken);
-            dispatch(refreshAccessToken(response.accessToken));
+        const result = await isReissuingPromise;
+        
+        if (isMounted) {
+          if (result.success) {
+            console.log('[App 초기화] Silent Refresh 성공:', result.accessToken);
+            dispatch(refreshAccessToken(result.accessToken));
 
             const storedUser = localStorage.getItem('authUser');
             if (storedUser) {
               dispatch(setUser(JSON.parse(storedUser)));
             }
+          } else {
+            const error = result.error;
+            if (error.name === 'CanceledError' || (error.code && error.code === 'ERR_CANCELED')) {
+               console.log('[App 초기화] Silent Refresh 요청이 취소되었습니다.');
+            } else {
+              console.log('[App 초기화] Silent Refresh 실패 (로그인 만료)', error);
+              dispatch(clearToken());
+            }
           }
-        } catch (error) {
-          if (error.name === 'CanceledError' || (error.code && error.code === 'ERR_CANCELED')) {
-             console.log('[App 초기화] Silent Refresh 요청이 취소되었습니다 (빠른 새로고침 등). 로그아웃하지 않습니다.');
-          } else if (isMounted) {
-            console.log('[App 초기화] Silent Refresh 실패 (로그인 만료)', error);
-            dispatch(clearToken());
-          }
-        } finally {
-          isReissuingInit = false;
+          setIsInit(true);
         }
       } else {
         // 로그인 이력이 없으면 아무것도 하지 않고 초기화 완료
         console.log('[App 초기화] 첫 방문 혹은 로그인 이력 없음, 패스...');
-      }
-      if (isMounted) {
-        setIsInit(true);
+        if (isMounted) {
+          setIsInit(true);
+        }
       }
     };
 
