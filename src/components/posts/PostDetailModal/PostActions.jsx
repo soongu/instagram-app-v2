@@ -11,6 +11,7 @@ import {useDispatch, useSelector} from "react-redux";
 import {likeApi} from "../../../services/api.js";
 import { updateLikeStatus, setLikePending, clearLikePending } from "../../../store/likeSlice.js";
 import { showToast } from "../../../store/toastSlice.js";
+import { formatCount } from "../../../utils/formatter.jsx";
 
 const PostActions = ({ postId, likeStatus }) => {
 
@@ -50,7 +51,7 @@ const PostActions = ({ postId, likeStatus }) => {
         </div>
         <button className={styles.actionButton}><FaRegBookmark /></button>
       </div>
-      <div className={styles.likesCount}>좋아요 {likeState?.likeCount}개</div>
+      <div className={styles.likesCount}>좋아요 {formatCount(likeState?.likeCount)}개</div>
     </div>
   );
 };

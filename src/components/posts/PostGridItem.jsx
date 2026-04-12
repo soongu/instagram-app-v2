@@ -3,6 +3,7 @@ import styles from './PostGridItem.module.scss';
 import { usePostModal } from '../../hooks/usePostModal';
 import { FaHeart, FaComment } from 'react-icons/fa6';
 import {useSelector} from "react-redux";
+import { formatCount } from "../../utils/formatter.jsx";
 
 const PostGridItem = ({ post, postModalContext = 'profile' }) => {
   const { openModal } = usePostModal();
@@ -43,10 +44,10 @@ const PostGridItem = ({ post, postModalContext = 'profile' }) => {
       )}
       <div className={styles.overlay}>
         <span>
-          <FaHeart /> {likeCount}
+          <FaHeart /> {formatCount(likeCount)}
         </span>
         <span>
-          <FaComment /> {commentCount}
+          <FaComment /> {formatCount(commentCount)}
         </span>
       </div>
     </div>

@@ -5,6 +5,7 @@ import {useDispatch, useSelector} from "react-redux";
 import {likeApi} from "../../../services/api.js";
 import { updateLikeStatus, setLikePending, clearLikePending } from "../../../store/likeSlice.js";
 import { showToast } from "../../../store/toastSlice.js";
+import { formatCount } from "../../../utils/formatter.jsx";
 
 const FeedItemActions = ({postId, openModal, likeStatus}) => {
 
@@ -51,7 +52,7 @@ const FeedItemActions = ({postId, openModal, likeStatus}) => {
         </button>
       </div>
       <div className={styles.likes}>
-        좋아요 <span>{likeState?.likeCount}</span>개
+        좋아요 <span>{formatCount(likeState?.likeCount)}</span>개
       </div>
     </div>
   );

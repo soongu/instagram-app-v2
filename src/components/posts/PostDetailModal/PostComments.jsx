@@ -1,7 +1,7 @@
 // src/components/posts/PostComments.jsx
 import { useNavigate } from "react-router-dom";
 import styles from './PostDetailModal.module.scss';
-import { formatDate, convertHashtagsToJsx } from "../../../utils/formatter.jsx";
+import { formatDate, convertHashtagsToJsx, formatCount } from "../../../utils/formatter.jsx";
 import { commentApi } from "../../../services/api.js";
 import { useState } from "react";
 
@@ -168,7 +168,7 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
                     <div className={styles.postTime} />
                   )}
                   {typeof comment.likeCount === 'number' && comment.likeCount > 0 && (
-                    <div className={styles.commentLikes}>좋아요 {comment.likeCount}개</div>
+                    <div className={styles.commentLikes}>좋아요 {formatCount(comment.likeCount)}개</div>
                   )}
                   <button
                     type="button"
@@ -201,7 +201,7 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
                           <div className={styles.postTime} />
                         )}
                         {typeof reply.likeCount === 'number' && reply.likeCount > 0 && (
-                          <div className={styles.commentLikes}>좋아요 {reply.likeCount}개</div>
+                          <div className={styles.commentLikes}>좋아요 {formatCount(reply.likeCount)}개</div>
                         )}
                         <button
                           type="button"

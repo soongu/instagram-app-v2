@@ -48,6 +48,19 @@ export const convertHashtagsToJsx = (content, onMentionClick = null) => {
   });
 };
 
+// 숫자 축약 포맷 (10만 이상 → K / M / B)
+export const formatCount = (value) => {
+  const num = Number(value) || 0;
+  if (num < 100_000) return num.toLocaleString();
+  if (num < 1_000_000) return `${Math.floor(num / 1_000)}K`;
+  if (num < 1_000_000_000) {
+    const m = num / 1_000_000;
+    return m >= 10 ? `${Math.floor(m)}M` : `${parseFloat(m.toFixed(1))}M`;
+  }
+  const b = num / 1_000_000_000;
+  return b >= 10 ? `${Math.floor(b)}B` : `${parseFloat(b.toFixed(1))}B`;
+};
+
 // 날짜 포맷팅 함수
 export const formatDate = (dateString) => {
   const date = new Date(dateString);

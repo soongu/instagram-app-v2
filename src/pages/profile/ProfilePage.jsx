@@ -7,6 +7,7 @@ import ProfileImage from "../../components/profile/ProfileImage.jsx";
 import ProfileFeed from "../../components/profile/ProfileFeed.jsx";
 import { followApi } from "../../services/api.js";
 import FollowModal from "../../components/profile/FollowModal/FollowModal.jsx";
+import { formatCount } from "../../utils/formatter.jsx";
 
 const ProfilePage = () => {
   // loader에서 불러온 프로필 데이터
@@ -114,13 +115,13 @@ const ProfilePage = () => {
           {/* 통계 정보 */}
           <ul className={styles.profileStats}>
             <li>
-              게시물 <span className={styles.statsNumber}>{postCount}</span>
+              게시물 <span className={styles.statsNumber}>{formatCount(postCount)}</span>
             </li>
             <li onClick={() => openModal('followers')} style={{ cursor: 'pointer' }}>
-              팔로워 <span className={styles.statsNumber}>{followerCount}</span>
+              팔로워 <span className={styles.statsNumber}>{formatCount(followerCount)}</span>
             </li>
             <li onClick={() => openModal('followings')} style={{ cursor: 'pointer' }}>
-              팔로우 <span className={styles.statsNumber}>{followingCount}</span>
+              팔로우 <span className={styles.statsNumber}>{formatCount(followingCount)}</span>
             </li>
           </ul>
 

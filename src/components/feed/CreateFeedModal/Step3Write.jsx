@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { FaChevronRight } from 'react-icons/fa6';
 import { hashtagApi } from '../../../services/api';
+import { formatCount } from '../../../utils/formatter.jsx';
 import Carousel from '../../common/Carousel/Carousel';
 import styles from '../CreateFeedModal.module.scss';
 import defaultProfileImage from '../../../assets/images/default-profile.svg';
@@ -129,7 +130,7 @@ const Step3Write = ({ files, user, content, onContentChange, filterStyle }) => {
                     <div className={styles.hashtagInfo}>
                       <span className={styles.hashtagName}>#{tag.hashtagName}</span>
                       <span className={styles.postCount}>
-                        게시물 {Number(tag.postCount ?? 0).toLocaleString()}개
+                        게시물 {formatCount(tag.postCount)}개
                       </span>
                     </div>
                   </button>
