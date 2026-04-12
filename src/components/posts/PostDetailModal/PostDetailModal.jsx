@@ -18,9 +18,9 @@ import CommentForm from "../../common/Comment/CommentForm.jsx";
 const PostDetailModal = () => {
   const { isOpen, postId, context, openModal, closeModal } = usePostModal();
   const [post, setPost] = useState(null);
-  const [commentsPage, setCommentsPage] = useState(1);
   const [commentsHasNext, setCommentsHasNext] = useState(false);
   const [isCommentsLoading, setIsCommentsLoading] = useState(false);
+  const commentsCursorRef = useRef(null);
   const dispatch = useDispatch();
   const location = useLocation();
   const lastLocationRef = useRef(null);
@@ -49,12 +49,13 @@ const PostDetailModal = () => {
     try {
       if (!hideLoading) {
         setIsCommentsLoading(true);
-        setCommentsPage(1);
+        commentsCursorRef.current = null;
       }
-      
-      const fetchSize = hideLoading ? commentsPage * 10 : 10;
+
+      const currentCount = hideLoading ? (post?.comments?.length ?? 0) : 0;
+      const fetchSize = hideLoading ? Math.max(currentCount, 20) : 20;
       const [commentsRes] = await Promise.all([
-        postApi.getPostComments(postId, 1, fetchSize),
+        postApi.getPostComments(postId, null, fetchSize),
         !hideLoading ? new Promise(resolve => setTimeout(resolve, 500)) : Promise.resolve()
       ]);
       const items = commentsRes?.items ?? [];
@@ -67,6 +68,11 @@ const PostDetailModal = () => {
         replyCount: c.replyCount,
       }));
 
+      if (items.length > 0) {
+        commentsCursorRef.current = items[items.length - 1].id;
+      } else {
+        commentsCursorRef.current = null;
+      }
       setCommentsHasNext(commentsRes?.hasNext ?? false);
       setPost(prev => (prev ? { ...prev, comments: mappedComments } : prev));
     } catch (error) {
@@ -74,13 +80,12 @@ const PostDetailModal = () => {
     } finally {
       if (!hideLoading) setIsCommentsLoading(false);
     }
-  }, [postId, isOpen, commentsPage]);
+  }, [postId, isOpen, post?.comments?.length]);
 
   const loadMoreComments = async () => {
     if (!commentsHasNext || !postId) return;
     try {
-      const nextPage = commentsPage + 1;
-      const commentsRes = await postApi.getPostComments(postId, nextPage, 10);
+      const commentsRes = await postApi.getPostComments(postId, commentsCursorRef.current);
       const items = commentsRes?.items ?? [];
       const newMapped = items.map((c) => ({
         id: c.id,
@@ -91,8 +96,10 @@ const PostDetailModal = () => {
         replyCount: c.replyCount,
       }));
 
+      if (items.length > 0) {
+        commentsCursorRef.current = items[items.length - 1].id;
+      }
       setCommentsHasNext(commentsRes?.hasNext ?? false);
-      setCommentsPage(nextPage);
       setPost(prev => (prev ? { ...prev, comments: [...prev.comments, ...newMapped] } : prev));
     } catch (error) {
       console.error('Failed to fetch more comments:', error);

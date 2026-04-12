@@ -30,7 +30,6 @@ const HashtagSearchPage = () => {
   const tagName = normalizeTagFromQuery(q);
 
   const [posts, setPosts] = useState([]);
-  const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -40,32 +39,46 @@ const HashtagSearchPage = () => {
   const dispatch = useDispatch();
   const prevIsOpenRef = useRef(isOpen);
   const loadMoreRef = useRef(null);
+  const cursorRef = useRef(null);
+  const isFetchingRef = useRef(false);
 
   const fetchPosts = useCallback(
-    async ({ pageNum, append = false, silent = false } = {}) => {
+    async ({ append = false, silent = false } = {}) => {
       if (!tagName) return;
+      if (append && isFetchingRef.current) return;
 
       try {
+        isFetchingRef.current = true;
         if (append) setLoadingMore(true);
         else if (!silent) setLoading(true);
 
-        const response = await postApi.getPostsByHashtag(tagName, pageNum, PAGE_SIZE);
+        const cursor = append ? cursorRef.current : null;
+        const [response] = await Promise.all([
+          postApi.getPostsByHashtag(tagName, cursor, PAGE_SIZE),
+          append ? new Promise((r) => setTimeout(r, 300)) : Promise.resolve(),
+        ]);
         const items = response?.items ?? [];
         const next = response?.hasNext ?? false;
 
         setHasNext(next);
+        if (items.length > 0) {
+          const lastItem = items[items.length - 1];
+          cursorRef.current = lastItem.id ?? lastItem.post_id ?? lastItem.postId ?? lastItem.feed_id ?? lastItem.feedId;
+        } else if (!append) {
+          cursorRef.current = null;
+        }
         if (append) {
           setPosts((prev) => [...prev, ...items]);
         } else {
           setPosts(items);
         }
-        setPage(pageNum);
         setError(null);
       } catch (err) {
         console.error('Failed to fetch hashtag posts:', err);
         if (!append) {
           setPosts([]);
           setHasNext(false);
+          cursorRef.current = null;
           const status = err.response?.status ?? err.response?.data?.status;
           if (status === 404) {
             setError('not_found');
@@ -74,6 +87,7 @@ const HashtagSearchPage = () => {
           }
         }
       } finally {
+        isFetchingRef.current = false;
         if (append) setLoadingMore(false);
         else if (!silent) setLoading(false);
       }
@@ -84,7 +98,7 @@ const HashtagSearchPage = () => {
   useEffect(() => {
     if (!tagName) {
       setPosts([]);
-      setPage(1);
+      cursorRef.current = null;
       setHasNext(false);
       setLoading(false);
       setHasUserScrolled(false);
@@ -92,9 +106,9 @@ const HashtagSearchPage = () => {
       return;
     }
 
-    setPage(1);
+    cursorRef.current = null;
     setHasUserScrolled(false);
-    fetchPosts({ pageNum: 1, append: false });
+    fetchPosts({ append: false });
   }, [tagName, fetchPosts]);
 
   useEffect(() => {
@@ -113,23 +127,22 @@ const HashtagSearchPage = () => {
     return () => {
       window.removeEventListener('wheel', markScrolled);
       window.removeEventListener('touchmove', markScrolled);
-      // keydown은 익명함수라 제거가 안 되므로, 간단히 hasUserScrolled가 true가 되면 effect가 재실행되며 리스너가 더 이상 추가되지 않습니다.
     };
   }, [hasUserScrolled]);
 
   useEffect(() => {
     if (prevIsOpenRef.current && !isOpen && tagName) {
       dispatch(clearCommentCounts());
-      fetchPosts({ pageNum: 1, append: false, silent: true });
+      cursorRef.current = null;
+      fetchPosts({ append: false, silent: true });
     }
     prevIsOpenRef.current = isOpen;
   }, [isOpen, tagName, fetchPosts, dispatch]);
 
   const loadMore = useCallback(() => {
     if (!hasNext || loadingMore || loading || !tagName) return;
-    const nextPage = page + 1;
-    fetchPosts({ pageNum: nextPage, append: true });
-  }, [hasNext, loadingMore, loading, tagName, page, fetchPosts]);
+    fetchPosts({ append: true });
+  }, [hasNext, loadingMore, loading, tagName, fetchPosts]);
 
   useEffect(() => {
     const el = loadMoreRef.current;

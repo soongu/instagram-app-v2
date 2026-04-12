@@ -168,14 +168,23 @@ Base URL: `/api`
 
 모든 게시물 관련 API의 베이스 경로는 `/api/posts` 입니다.
 
-### 2.1 피드 조회 (전체)
-- **URL**: `/api/posts`
+### 2.1 피드 조회 (전체) — 커서 기반 무한 스크롤
+- **URL**: `/api/posts/cursor`
 - **Method**: `GET`
-- **Description**: 최신 게시물 피드를 조회합니다. (페이징 지원)
+- **Description**: 최신 게시물 피드를 커서 기반으로 조회합니다. `cursor`에 이전 페이지 마지막 항목의 `feed_id`를 넘기면 그 다음 페이지를 반환합니다. 첫 페이지에서는 `cursor`를 생략합니다.
 - **Query Parameters**:
-    - `page`: 페이지 번호 (기본값: 1)
-    - `size`: 페이지 크기 (기본값: 5)
+    - `cursor`: 이전 페이지 마지막 항목의 `feed_id` (첫 페이지에서는 생략)
+    - `size`: 페이지 크기 (기본값: 5, 최대: 50)
 - **Authentication**: **필수** (로그인 회원 기준 `likeStatus.liked`: 해당 글에 좋아요 눌렀으면 `true`)
+
+- **호출 예시**:
+```
+① 첫 페이지:       GET /api/posts/cursor?size=5
+② 두 번째 페이지:  GET /api/posts/cursor?size=5&cursor=10023
+③ 세 번째 페이지:  GET /api/posts/cursor?size=5&cursor=10018
+   (cursor = 이전 응답 items 마지막 항목의 feed_id)
+```
+
 - **Response Body** (`ApiResponse<SliceResponse<PostResponse>>`):
 ```json
 {
@@ -184,7 +193,7 @@ Base URL: `/api`
     "hasNext": true,
     "items": [
       {
-        "feed_id": 1,
+        "feed_id": 10025,
         "content": "게시물 내용",
         "username": "writer_username",
         "profileImageUrl": "http://example.com/profile.jpg",
@@ -211,6 +220,7 @@ Base URL: `/api`
 - `likeStatus.liked`: 로그인한 사용자가 해당 글에 좋아요했으면 `true` (피드 조회 시 QueryDSL `EXISTS(post_like)` 한 쿼리로 계산).
 - `likeStatus.likeCount`: 게시물 비정규화 좋아요 수.
 - `hashtagNames` (`string[]`): 해당 게시물 본문에서 추출·저장된 **정규화된** 해시태그 이름 목록(표시 순서는 서버 구현에 따름). 태그가 없으면 빈 배열 `[]`.
+- **커서 사용법**: 다음 페이지 요청 시 `items` 배열 **마지막 항목의 `feed_id`** 를 `cursor` 파라미터로 전달합니다. `hasNext`가 `false`이면 더 이상 데이터가 없습니다.
 
 ### 2.2 게시물 생성
 - **URL**: `/api/posts`
@@ -315,9 +325,9 @@ Base URL: `/api`
 ### 2.5 피드·프로필 그리드와 좋아요·해시태그 필드 (참고)
 | API | 좋아요·해시태그 관련 필드 | 설명 |
 |-----|--------------------------|------|
-| `GET /api/posts` (피드) | `items[].likeStatus.liked` | 로그인 사용자가 그 글에 좋아요했는지 (QueryDSL EXISTS 1쿼리) |
-| `GET /api/posts` (피드) | `items[].likeStatus.likeCount` | 게시물 비정규화 좋아요 수 |
-| `GET /api/posts` (피드) | `items[].hashtagNames` | 해당 글에 붙은 정규화된 태그명 배열 |
+| `GET /api/posts/cursor` (피드) | `items[].likeStatus.liked` | 로그인 사용자가 그 글에 좋아요했는지 (QueryDSL EXISTS 1쿼리) |
+| `GET /api/posts/cursor` (피드) | `items[].likeStatus.likeCount` | 게시물 비정규화 좋아요 수 |
+| `GET /api/posts/cursor` (피드) | `items[].hashtagNames` | 해당 글에 붙은 정규화된 태그명 배열 |
 | `GET /api/profiles/{username}/posts` (프로필) | `items[].likeCount` | 동일 비정규화 값 (`liked` 없음) |
 | `GET /api/hashtags/{name}/posts` | — | 그리드용 `ProfilePostResponse`만 반환(썸네일·수치). 태그 목록은 피드/상세 `PostResponse`·`PostDetailResponse` 참고 |
 
@@ -364,13 +374,13 @@ Base URL: `/api`
     - `GET /api/members/{memberId}`
     - 내부적으로 동일한 `MemberProfileResponse`를 반환합니다.
 
-### 3.2 프로필 피드 조회
+### 3.2 프로필 피드 조회 — 커서 기반
 - **URL**: `/api/profiles/{username}/posts`
 - **Method**: `GET`
 - **Description**: 특정 유저의 프로필 그리드(게시물 목록)를 username 기준으로 조회합니다.
 - **Authentication**: 선택 또는 프론트 정책에 따름
 - **Query Parameters**:
-    - `page`: 페이지 번호 (기본값: 1)
+    - `cursor`: 이전 페이지 마지막 항목의 `id` (첫 페이지에서는 생략)
     - `size`: 페이지 크기 (기본값: 12)
 - **Path Parameters**:
     - `username`: 조회 대상 회원의 username
@@ -393,12 +403,53 @@ Base URL: `/api`
   "error": null
 }
 ```
+- **커서 사용법**: 다음 페이지 요청 시 `items` 배열 마지막 항목의 `id`를 `cursor`로 전달합니다.
 
-- **호환용 기존 API**:
-    - `GET /api/members/{memberId}/posts`
-    - 내부적으로 동일한 `ProfilePostResponse` 목록을 반환합니다.
+### 3.3 유저 검색 — 커서 기반
+- **URL**: `/api/members/search`
+- **Method**: `GET`
+- **Description**: username에 keyword가 포함된 유저를 커서 기반으로 검색합니다. keyword가 비어있으면 빈 결과를 반환합니다.
+- **Authentication**: 불필요
+- **Query Parameters**:
+    - `keyword`: 검색어 (username 부분 일치, 대소문자 무시)
+    - `cursor`: 이전 페이지 마지막 항목의 `memberId` (첫 페이지에서는 생략)
+    - `size`: 페이지 크기 (기본값: 20, 최대: 50)
 
-### 3.3 팔로우
+- **호출 예시**:
+```
+① 첫 페이지:       GET /api/members/search?keyword=kuro&size=5
+② 두 번째 페이지:  GET /api/members/search?keyword=kuro&size=5&cursor=5000
+```
+
+- **Response Body** (`ApiResponse<SliceResponse<MemberSummary>>`):
+```json
+{
+  "success": true,
+  "data": {
+    "hasNext": true,
+    "items": [
+      {
+        "memberId": 5020,
+        "username": "kuro_5000",
+        "profileImageUrl": null
+      },
+      {
+        "memberId": 5015,
+        "username": "kuro_4995",
+        "profileImageUrl": null
+      }
+    ]
+  },
+  "error": null
+}
+```
+- **필드 설명** (`MemberSummary`):
+    - `memberId`: 회원 ID
+    - `username`: 사용자 이름
+    - `profileImageUrl`: 프로필 이미지 URL (없으면 `null`)
+- **커서 사용법**: 다음 페이지 요청 시 `items` 배열 마지막 항목의 `memberId`를 `cursor`로 전달합니다.
+
+### 3.4 팔로우
 - **URL**: `/api/members/{memberId}/follow`
 - **Method**: `POST`
 - **Description**: 로그인 유저가 대상 유저를 팔로우합니다.
@@ -422,7 +473,7 @@ Base URL: `/api`
     - **400** — 이미 팔로우 중인 경우 (`F001`)
     - **404** — 대상 회원이 존재하지 않는 경우 (`M004`)
 
-### 3.4 언팔로우
+### 3.5 언팔로우
 - **URL**: `/api/members/{memberId}/follow`
 - **Method**: `DELETE`
 - **Description**: 로그인 유저가 대상 유저를 언팔로우합니다.
@@ -445,13 +496,13 @@ Base URL: `/api`
     - **404** — 기존 팔로우 관계가 없는 경우 (`F002`)
     - **404** — 대상 회원이 존재하지 않는 경우 (`M004`)
 
-### 3.5 팔로워 목록 조회
+### 3.6 팔로워 목록 조회 — 커서 기반
 - **URL**: `/api/members/{memberId}/followers`
 - **Method**: `GET`
 - **Description**: 특정 유저를 팔로우하는 사람들의 목록을 조회합니다.
 - **Authentication**: **필수**
 - **Query Parameters**:
-    - `page`: 페이지 번호 (기본값: 1)
+    - `cursor`: 이전 페이지 마지막 항목의 `memberId` (첫 페이지에서는 생략)
     - `size`: 페이지 크기 (기본값: 20, 최대 50)
 - **Path Parameters**:
     - `memberId`: 프로필 주인 회원 ID
@@ -489,13 +540,13 @@ Base URL: `/api`
 - **정렬 기준**:
     - 가장 최근에 팔로우한 사람이 먼저 내려갑니다. (`Follow.createdAt DESC`)
 
-### 3.6 팔로잉 목록 조회
+### 3.7 팔로잉 목록 조회 — 커서 기반
 - **URL**: `/api/members/{memberId}/followings`
 - **Method**: `GET`
 - **Description**: 특정 유저가 팔로우하고 있는 사람들의 목록을 조회합니다.
 - **Authentication**: **필수**
 - **Query Parameters**:
-    - `page`: 페이지 번호 (기본값: 1)
+    - `cursor`: 이전 페이지 마지막 항목의 `memberId` (첫 페이지에서는 생략)
     - `size`: 페이지 크기 (기본값: 20, 최대 50)
 - **Path Parameters**:
     - `memberId`: 프로필 주인 회원 ID
@@ -550,6 +601,7 @@ Base URL: `/api`
 }
 ```
 - `parentId`: 원댓글이면 `null` 또는 생략, 대댓글이면 부모 원댓글 ID
+- **멘션**: `content` 안의 `@username` 패턴은 저장 시 자동 파싱되어 `CommentMention`으로 저장됩니다. 실제 존재하는 유저만 저장되며, 존재하지 않는 유저는 무시됩니다. 멘션 최대 20개, username 최대 30자 초과분은 무시합니다.
 - **Response Body** (`ApiResponse<CommentResponse>`), **HTTP 201**:
 ```json
 {
@@ -574,13 +626,13 @@ Base URL: `/api`
     - **400** — 대댓글의 parent가 원댓글이 아닌 경우 (`R002`)
     - **400** — 요청 경로(postId)와 댓글의 게시글이 일치하지 않는 경우 (`R003`)
 
-### 4.2 원댓글 목록 조회
+### 4.2 원댓글 목록 조회 — 커서 기반
 - **URL**: `/api/posts/{postId}/comments`
 - **Method**: `GET`
-- **Description**: 원댓글 목록을 페이지 단위로 조회하며, 각 항목에 `replyCount`(대댓글 수)를 포함합니다.
+- **Description**: 원댓글 목록을 커서 기반으로 조회하며, 각 항목에 `replyCount`(대댓글 수)를 포함합니다.
 - **Authentication**: **필수**
 - **Query Parameters**:
-    - `page`: 기본값 `1`
+    - `cursor`: 이전 페이지 마지막 항목의 `id` (첫 페이지에서는 생략)
     - `size`: 기본값 `20`
 - **Path Parameters**:
     - `postId`: 대상 게시물 ID
@@ -608,13 +660,13 @@ Base URL: `/api`
 - **정렬 기준**:
     - `createdAt ASC, id ASC`
 
-### 4.3 대댓글 목록 조회 (답글 더보기)
+### 4.3 대댓글 목록 조회 (답글 더보기) — 커서 기반
 - **URL**: `/api/posts/{postId}/comments/{rootCommentId}/replies`
 - **Method**: `GET`
-- **Description**: 특정 원댓글의 대댓글 목록을 조회합니다.
+- **Description**: 특정 원댓글의 대댓글 목록을 커서 기반으로 조회합니다.
 - **Authentication**: **필수**
 - **Query Parameters**:
-    - `page`: 기본값 `1`
+    - `cursor`: 이전 페이지 마지막 항목의 `id` (첫 페이지에서는 생략)
     - `size`: 기본값 `10`
 - **Path Parameters**:
     - `postId`: 대상 게시물 ID
@@ -648,14 +700,14 @@ Base URL: `/api`
 
 해시태그 전용 API의 베이스 경로는 `/api/hashtags` 입니다. (게시물 본문의 `#태그` 파싱·저장은 **게시물 작성** 흐름에서 처리되며, 피드·상세 응답의 `hashtagNames` 는 **2.1 피드 조회**, **2.4 피드 상세 조회** 절을 참고하세요.)
 
-### 5.1 특정 해시태그가 붙은 게시물 목록 (그리드·무한 스크롤)
+### 5.1 특정 해시태그가 붙은 게시물 목록 (그리드·무한 스크롤) — 커서 기반
 - **URL**: `/api/hashtags/{name}/posts`
 - **Method**: `GET`
 - **Description**: **정규화된** 해시태그 이름(`name`)이 붙은 게시물을 **프로필 그리드**와 동일한 `ProfilePostResponse` 슬라이스로 조회합니다. 정렬은 서버에서 **`id` 내림차순** 고정입니다.
 - **Path Parameters**:
     - `name`: 조회할 해시태그 이름(서버 저장 형식과 동일하게, 예: 소문자 `맛집`)
 - **Query Parameters**:
-    - `page`: 페이지 번호 (기본값: `1`)
+    - `cursor`: 이전 페이지 마지막 항목의 `id` (첫 페이지에서는 생략)
     - `size`: 페이지 크기 (기본값: `12`)
 - **Authentication**: 인증 필수.
 - **Response Body** (`ApiResponse<SliceResponse<ProfilePostResponse>>`):
@@ -687,7 +739,7 @@ Base URL: `/api`
 - **Query Parameters**:
     - `prefix`: 선택. 이름 **접두사**로 필터(예: `맛` → `맛집` 계열만).
     - `limit`: 최대 개수 (기본값: `5`)
-- **Authentication**: 필수
+- **Authentication**: 팀 정책에 따름.
 - **Response Body** (`ApiResponse<List<HashtagMetaResponse>>`):
 ```json
 {

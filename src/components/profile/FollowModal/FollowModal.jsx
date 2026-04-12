@@ -7,10 +7,11 @@ import ProfileImage from '../ProfileImage';
 
 const FollowModal = ({ isOpen, onClose, modalType, memberId, currentUsername }) => {
   const [users, setUsers] = useState([]);
-  const [page, setPage] = useState(0);
   const [hasNext, setHasNext] = useState(true);
   const [loading, setLoading] = useState(false);
-  
+  const cursorRef = useRef(null);
+  const isFetchingRef = useRef(false);
+
   const observer = useRef();
   const navigate = useNavigate();
 
@@ -18,24 +19,26 @@ const FollowModal = ({ isOpen, onClose, modalType, memberId, currentUsername }) 
     let isMounted = true;
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      // 모달이 열리거나 타입이 변경될 때 상태 초기화 및 첫 페이지 조회
       setUsers([]);
-      setPage(0);
+      cursorRef.current = null;
       setHasNext(true);
-      setLoading(false); // Reset loading state from any previous incomplete fetch
-      
+      setLoading(false);
+
       const loadInitialUsers = async () => {
         try {
           if (isMounted) setLoading(true);
           let res;
           if (modalType === 'followers') {
-            res = await followApi.getFollowers(memberId, 0);
+            res = await followApi.getFollowers(memberId, null);
           } else {
-            res = await followApi.getFollowings(memberId, 0);
+            res = await followApi.getFollowings(memberId, null);
           }
           if (res && res.items && isMounted) {
             setUsers(res.items);
             setHasNext(res.hasNext);
+            if (res.items.length > 0) {
+              cursorRef.current = res.items[res.items.length - 1].memberId;
+            }
           }
         } catch (error) {
           console.error('유저 목록 초기 로딩 실패:', error);
@@ -43,14 +46,14 @@ const FollowModal = ({ isOpen, onClose, modalType, memberId, currentUsername }) 
           if (isMounted) setLoading(false);
         }
       };
-      
+
       loadInitialUsers();
     } else {
       document.body.style.overflow = 'auto';
-      // 닫힐 때 상태를 명시적으로 초기화 (다음 열림시 loading이 true로 굳어있는 현상 방지)
       setUsers([]);
       setLoading(false);
       setHasNext(true);
+      cursorRef.current = null;
     }
 
     return () => {
@@ -59,23 +62,28 @@ const FollowModal = ({ isOpen, onClose, modalType, memberId, currentUsername }) 
     };
   }, [isOpen, modalType, memberId]);
 
-  const fetchMoreUsers = async (nextPage) => {
-    if (loading || !hasNext) return;
+  const fetchMoreUsers = async () => {
+    if (isFetchingRef.current || loading || !hasNext) return;
     try {
+      isFetchingRef.current = true;
       setLoading(true);
-      let res;
-      if (modalType === 'followers') {
-        res = await followApi.getFollowers(memberId, nextPage);
-      } else {
-        res = await followApi.getFollowings(memberId, nextPage);
-      }
+      const [res] = await Promise.all([
+        modalType === 'followers'
+          ? followApi.getFollowers(memberId, cursorRef.current)
+          : followApi.getFollowings(memberId, cursorRef.current),
+        new Promise((r) => setTimeout(r, 300)),
+      ]);
       if (res && res.items) {
         setUsers(prev => [...prev, ...res.items]);
         setHasNext(res.hasNext);
+        if (res.items.length > 0) {
+          cursorRef.current = res.items[res.items.length - 1].memberId;
+        }
       }
     } catch (error) {
       console.error('추가 유저 목록 로딩 실패:', error);
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
   };
@@ -85,11 +93,7 @@ const FollowModal = ({ isOpen, onClose, modalType, memberId, currentUsername }) 
     if (observer.current) observer.current.disconnect();
     observer.current = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && hasNext) {
-        setPage(prev => {
-          const nextPage = prev + 1;
-          fetchMoreUsers(nextPage);
-          return nextPage;
-        });
+        fetchMoreUsers();
       }
     });
     if (node) observer.current.observe(node);

@@ -12,7 +12,7 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
   const [repliesState, setRepliesState] = useState({});
 
   const handleViewReplies = async (comment) => {
-    const currentState = repliesState[comment.id] || { items: [], page: 1, hasNext: true, isFirstFetch: true, isLoading: false };
+    const currentState = repliesState[comment.id] || { items: [], cursor: null, hasNext: true, isFirstFetch: true, isLoading: false };
     if (!currentState.hasNext || currentState.isLoading) return;
 
     setRepliesState(prev => ({
@@ -26,7 +26,7 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
     try {
       const size = 3;
       const [res] = await Promise.all([
-        commentApi.getReplies(feedId, comment.id, currentState.page, size),
+        commentApi.getReplies(feedId, comment.id, currentState.cursor, size),
         new Promise(r => setTimeout(r, 300))
       ]);
 
@@ -35,11 +35,13 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
         const unique = Array.from(new Map(merged.map(item => [item.id, item])).values());
         unique.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
+        const newCursor = res.items?.length > 0 ? res.items[res.items.length - 1].id : currentState.cursor;
+
         return {
           ...prev,
           [comment.id]: {
             items: unique,
-            page: currentState.page + 1,
+            cursor: newCursor,
             hasNext: res.hasNext,
             isFirstFetch: false,
             isLoading: false,
@@ -76,7 +78,7 @@ const PostComments = ({ comments, postUser, postContent, postCreatedAt, feedId, 
       });
 
       setRepliesState((prev) => {
-        const prevState = prev[replyTargetId] || { items: [], page: 1, hasNext: true, isFirstFetch: true };
+        const prevState = prev[replyTargetId] || { items: [], cursor: null, hasNext: true, isFirstFetch: true };
         const merged = [...prevState.items, newReply];
         const unique = Array.from(new Map(merged.map(item => [item.id, item])).values());
         unique.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));

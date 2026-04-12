@@ -30,16 +30,18 @@ const FeedList = () => {
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasNext, setHasNext] = useState(true);
-  const [page, setPage] = useState(1);
+  const [fetchTrigger, setFetchTrigger] = useState(0);
   const [fetchEpoch, setFetchEpoch] = useState(0);
+  const cursorRef = useRef(null);
   const observerRef = useRef(null);
   const pendingRefreshRef = useRef(false);
+  const isFetchingRef = useRef(false);
 
   useEffect(() => {
     if (!location.state?.refreshFeed) return;
     pendingRefreshRef.current = true;
     setPosts([]);
-    setPage(1);
+    cursorRef.current = null;
     setHasNext(true);
     setFetchEpoch((e) => e + 1);
     navigate('.', { replace: true, state: {} });
@@ -53,24 +55,30 @@ const FeedList = () => {
     let cancelled = false;
 
     const fetchPosts = async () => {
+      isFetchingRef.current = true;
       setIsLoading(true);
 
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (cancelled) return;
+      if (cancelled) { isFetchingRef.current = false; return; }
 
       try {
-        const response = await feedApi.getFeedPosts(page);
+        const response = await feedApi.getFeedPosts(cursorRef.current);
         if (cancelled) return;
         const nextItems = response?.items ?? response?.feedList ?? [];
-        const shouldReplace = pendingRefreshRef.current && page === 1;
+        const shouldReplace = pendingRefreshRef.current && cursorRef.current === null;
         if (shouldReplace) {
           pendingRefreshRef.current = false;
         }
         setPosts((prev) => (shouldReplace ? nextItems : [...prev, ...nextItems]));
         setHasNext(response?.hasNext ?? false);
+        if (nextItems.length > 0) {
+          const lastItem = nextItems[nextItems.length - 1];
+          cursorRef.current = lastItem['feed_id'] ?? lastItem['feedId'];
+        }
       } catch (error) {
         console.error('Failed to fetch posts:', error);
       } finally {
+        isFetchingRef.current = false;
         if (!cancelled) setIsLoading(false);
       }
     };
@@ -80,13 +88,13 @@ const FeedList = () => {
       cancelled = true;
       setIsLoading(false);
     };
-  }, [page, hasNext, fetchEpoch]);
+  }, [fetchTrigger, hasNext, fetchEpoch]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !isLoading && hasNext) {
-          setPage((prevPage) => prevPage + 1);
+        if (entries[0].isIntersecting && !isFetchingRef.current && hasNext) {
+          setFetchTrigger((t) => t + 1);
         }
       },
       {threshold: 0.5}

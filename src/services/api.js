@@ -132,7 +132,8 @@ export const authApi = {
 
 // 피드 관련 API
 export const feedApi = {
-  getFeedPosts: (page) => api.get(`/posts?page=${page}`)
+  getFeedPosts: (cursor, size = 5) =>
+    api.get(`/posts/cursor?size=${size}${cursor ? `&cursor=${cursor}` : ''}`),
 };
 
 export const profileApi = {
@@ -141,8 +142,8 @@ export const profileApi = {
     api.get(`/profiles/${username}`),
 
   // 프로필 피드 목록 조회
-  getProfilePosts: (username) =>
-    api.get(`/profiles/${username}/posts`),
+  getProfilePosts: (username, cursor, size = 12) =>
+    api.get(`/profiles/${username}/posts?size=${size}${cursor ? `&cursor=${cursor}` : ''}`),
 
   // 프로필 이미지 업데이트
   updateProfileImage: (formData) =>
@@ -156,19 +157,20 @@ export const profileApi = {
 
 export const postApi = {
   // 특정 사용자의 게시물 목록 가져오기 (프로필 페이지)
-  getProfilePosts: (username) => api.get(`/profiles/${username}/posts`),
+  getProfilePosts: (username, cursor, size = 12) =>
+    api.get(`/profiles/${username}/posts?size=${size}${cursor ? `&cursor=${cursor}` : ''}`),
 
   // 특정 해시태그의 게시물 목록 가져오기 (해시태그 검색 페이지, SliceResponse)
-  getPostsByHashtag: (hashtag, page = 1, size = 12) =>
-    api.get(`/hashtags/${encodeURIComponent(hashtag)}/posts?page=${page}&size=${size}`),
+  getPostsByHashtag: (hashtag, cursor, size = 12) =>
+    api.get(`/hashtags/${encodeURIComponent(hashtag)}/posts?size=${size}${cursor ? `&cursor=${cursor}` : ''}`),
 
   // 개별 게시물 상세 정보 가져오기 (모달용)
   // context="profile"일 때만 prevPostId/nextPostId가 채워질 수 있음
   getPost: (postId, context) => api.get(`/posts/${postId}${context ? `?context=${context}` : ''}`),
 
   // 원댓글 목록 조회(대댓글은 별도 엔드포인트)
-  getPostComments: (postId, page = 1, size = 10) =>
-    api.get(`/posts/${postId}/comments?page=${page}&size=${size}`),
+  getPostComments: (postId, cursor, size = 20) =>
+    api.get(`/posts/${postId}/comments?size=${size}${cursor ? `&cursor=${cursor}` : ''}`),
 
   // 게시물 생성 (멀티파트 폼 데이터)
   createPost: (formData) => api.post(`/posts`, formData, {
@@ -195,8 +197,8 @@ export const likeApi = {
 // 댓글 관련 API
 export const commentApi = {
   addComment: (feedId, payload) => api.post(`/posts/${feedId}/comments`, payload),
-  getReplies: (postId, rootCommentId, page = 1, size = 10) =>
-    api.get(`/posts/${postId}/comments/${rootCommentId}/replies?page=${page}&size=${size}`),
+  getReplies: (postId, rootCommentId, cursor, size = 10) =>
+    api.get(`/posts/${postId}/comments/${rootCommentId}/replies?size=${size}${cursor ? `&cursor=${cursor}` : ''}`),
 };
 
 // 팔로우 관련 API
@@ -206,7 +208,9 @@ export const followApi = {
   // 언팔로우
   unfollow: (memberId) => api.delete(`/members/${memberId}/follow`),
   // 팔로워 목록
-  getFollowers: (memberId, page = 0, size = 20) => api.get(`/members/${memberId}/followers?page=${page}&size=${size}`),
+  getFollowers: (memberId, cursor, size = 20) =>
+    api.get(`/members/${memberId}/followers?size=${size}${cursor ? `&cursor=${cursor}` : ''}`),
   // 팔로잉 목록
-  getFollowings: (memberId, page = 0, size = 20) => api.get(`/members/${memberId}/followings?page=${page}&size=${size}`),
+  getFollowings: (memberId, cursor, size = 20) =>
+    api.get(`/members/${memberId}/followings?size=${size}${cursor ? `&cursor=${cursor}` : ''}`),
 };
