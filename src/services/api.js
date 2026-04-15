@@ -214,3 +214,21 @@ export const followApi = {
   getFollowings: (memberId, cursor, size = 20) =>
     api.get(`/members/${memberId}/followings?size=${size}${cursor ? `&cursor=${cursor}` : ''}`),
 };
+
+// 알림 관련 API
+export const notificationApi = {
+  getNotifications: (cursor, size = 20, type, isRead) => {
+    let url = `/notifications?size=${size}`;
+    if (cursor) url += `&cursor=${cursor}`;
+    if (type) url += `&type=${type}`;
+    if (isRead !== undefined && isRead !== null) url += `&isRead=${isRead}`;
+    return api.get(url);
+  },
+  markAsRead: (id) => api.patch(`/notifications/${id}/read`),
+};
+
+// 회원 검색 API
+export const memberApi = {
+  search: (keyword, cursor, size = 20) =>
+    api.get(`/members/search?keyword=${encodeURIComponent(keyword)}&size=${size}${cursor ? `&cursor=${cursor}` : ''}`),
+};

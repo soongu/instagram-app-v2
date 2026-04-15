@@ -19,12 +19,20 @@ import MorePopover from "./MorePopover.jsx";
 import {useEffect, useState} from "react";
 import {useSelector, useDispatch} from "react-redux";
 import { openCreateFeedModal } from '../../store/createFeedModalSlice';
+import { toggleSearchPanel, closeSearchPanel } from '../../store/searchPanelSlice';
+import { toggleNotificationPanel, closeNotificationPanel } from '../../store/notificationPanelSlice';
 import CreateFeedModal from '../feed/CreateFeedModal/index';
+import SearchPanel from './SearchPanel/SearchPanel';
+import NotificationPanel from './NotificationPanel/NotificationPanel';
 
 const Sidebar = () => {
 
   const storedUser = useSelector(state => state.auth.user);
+  const isSearchOpen = useSelector(state => state.searchPanel.isOpen);
+  const isNotificationOpen = useSelector(state => state.notificationPanel.isOpen);
   const dispatch = useDispatch();
+
+  const isPanelOpen = isSearchOpen || isNotificationOpen;
 
   const [showMoreMenu, setShowMoreMenu] = useState(false);
 
@@ -44,77 +52,102 @@ const Sidebar = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
+  const handleSearchToggle = () => {
+    if (isNotificationOpen) dispatch(closeNotificationPanel());
+    dispatch(toggleSearchPanel());
+  };
+
+  const handleNotificationToggle = () => {
+    if (isSearchOpen) dispatch(closeSearchPanel());
+    dispatch(toggleNotificationPanel());
+  };
+
+  const handleNavClick = () => {
+    if (isSearchOpen) dispatch(closeSearchPanel());
+    if (isNotificationOpen) dispatch(closeNotificationPanel());
+  };
+
+  const handleBackdropClick = () => {
+    if (isSearchOpen) dispatch(closeSearchPanel());
+    if (isNotificationOpen) dispatch(closeNotificationPanel());
+  };
 
   return (
-    <nav className={styles.sidebar}>
-      <div className={styles.logoContainer}>
-        <Link to="/" className={styles.logo}>
-          <InstagramLogo/>
-        </Link>
-      </div>
+    <>
+      <nav className={`${styles.sidebar} ${isPanelOpen ? styles.collapsed : ''}`}>
+        <div className={styles.logoContainer}>
+          <Link to="/" className={styles.logo} onClick={handleNavClick}>
+            <InstagramLogo/>
+          </Link>
+        </div>
 
-      <div className={styles.menuContainer}>
-        <NavLink to="/" className={styles.menuItem}>
-          <FaHouse size={24}/>
-          <span className={styles.menuText}>홈</span>
-        </NavLink>
+        <div className={styles.menuContainer}>
+          <NavLink to="/" className={styles.menuItem} onClick={handleNavClick}>
+            <FaHouse size={24}/>
+            <span className={styles.menuText}>홈</span>
+          </NavLink>
 
-        <button type="button" className={styles.menuItem}>
-          <FaMagnifyingGlass size={24}/>
-          <span className={styles.menuText}>검색</span>
-        </button>
-
-        <NavLink to="/explore" className={styles.menuItem}>
-          <FaRegCompass size={24}/>
-          <span className={styles.menuText}>탐색 탭</span>
-        </NavLink>
-
-        <NavLink to="/reels" className={styles.menuItem}>
-          <FaFilm size={24}/>
-          <span className={styles.menuText}>릴스</span>
-        </NavLink>
-
-        <NavLink to="/direct/inbox" className={styles.menuItem}>
-          <FaRegPaperPlane size={24}/>
-          <span className={styles.menuText}>메시지</span>
-        </NavLink>
-
-        <button type="button" className={styles.menuItem}>
-          <FaRegHeart size={24}/>
-          <span className={styles.menuText}>알림</span>
-        </button>
-
-        <button type="button" className={styles.menuItem} onClick={() => dispatch(openCreateFeedModal())}>
-          <FaRegSquarePlus size={24}/>
-          <span className={styles.menuText}>만들기</span>
-        </button>
-
-        <NavLink to={storedUser?.username ? `/${storedUser.username}` : '/'} className={styles.menuItem}>
-          <div className={styles.profileImage}>
-            <img src={storedUser?.profileImage || defaultProfileImage} alt="프로필"/>
-          </div>
-          <span className={styles.menuText}>프로필</span>
-        </NavLink>
-      </div>
-
-      <div className={styles.bottomMenu}>
-        <NavLink to="/threads" className={styles.menuItem}>
-          <FaAt size={24}/>
-          <span className={styles.menuText}>Threads</span>
-        </NavLink>
-
-        <div style={{position: 'relative'}}>
-          <button type="button" id='moreButton' className={styles.menuItem} onClick={toggleMoreMenu}>
-            <FaBars size={24}/>
-            <span className={styles.menuText}>더 보기</span>
+          <button type="button" className={styles.menuItem} onClick={handleSearchToggle}>
+            <FaMagnifyingGlass size={24}/>
+            <span className={styles.menuText}>검색</span>
           </button>
 
-          {showMoreMenu && <MorePopover/>}
-        </div>
-      </div>
+          <NavLink to="/explore" className={styles.menuItem} onClick={handleNavClick}>
+            <FaRegCompass size={24}/>
+            <span className={styles.menuText}>탐색 탭</span>
+          </NavLink>
 
-      <CreateFeedModal />
-    </nav>
+          <NavLink to="/reels" className={styles.menuItem} onClick={handleNavClick}>
+            <FaFilm size={24}/>
+            <span className={styles.menuText}>릴스</span>
+          </NavLink>
+
+          <NavLink to="/direct/inbox" className={styles.menuItem} onClick={handleNavClick}>
+            <FaRegPaperPlane size={24}/>
+            <span className={styles.menuText}>메시지</span>
+          </NavLink>
+
+          <button type="button" className={styles.menuItem} onClick={handleNotificationToggle}>
+            <FaRegHeart size={24}/>
+            <span className={styles.menuText}>알림</span>
+          </button>
+
+          <button type="button" className={styles.menuItem} onClick={() => dispatch(openCreateFeedModal())}>
+            <FaRegSquarePlus size={24}/>
+            <span className={styles.menuText}>만들기</span>
+          </button>
+
+          <NavLink to={storedUser?.username ? `/${storedUser.username}` : '/'} className={styles.menuItem} onClick={handleNavClick}>
+            <div className={styles.profileImage}>
+              <img src={storedUser?.profileImage || defaultProfileImage} alt="프로필"/>
+            </div>
+            <span className={styles.menuText}>프로필</span>
+          </NavLink>
+        </div>
+
+        <div className={styles.bottomMenu}>
+          <NavLink to="/threads" className={styles.menuItem} onClick={handleNavClick}>
+            <FaAt size={24}/>
+            <span className={styles.menuText}>Threads</span>
+          </NavLink>
+
+          <div style={{position: 'relative'}}>
+            <button type="button" id='moreButton' className={styles.menuItem} onClick={toggleMoreMenu}>
+              <FaBars size={24}/>
+              <span className={styles.menuText}>더 보기</span>
+            </button>
+
+            {showMoreMenu && <MorePopover/>}
+          </div>
+        </div>
+
+        <CreateFeedModal />
+      </nav>
+
+      {isPanelOpen && <div className={styles.searchBackdrop} onClick={handleBackdropClick} />}
+      <SearchPanel />
+      <NotificationPanel />
+    </>
   );
 };
 

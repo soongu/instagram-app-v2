@@ -47,6 +47,8 @@ Base URL: `/api`
     - `H002`: 허용되지 않는 해시태그 형식입니다.
     - `H003`: 게시물에 붙일 수 있는 해시태그 개수를 초과했습니다.
     - `H004`: 해시태그 이름이 너무 깁니다.
+    - `N001`: 알림을 찾을 수 없습니다.
+    - `N002`: 본인의 알림만 읽음 처리할 수 있습니다.
 
 ---
 
@@ -760,4 +762,111 @@ Base URL: `/api`
 - **필드 설명** (`HashtagMetaResponse`):
     - `hashtagName` (`string`): 표시·검색에 쓰는 태그 이름(정규화된 값).
     - `postCount` (`long`): 해당 태그가 붙은 게시물 수.
+
+---
+
+## 6. Notification (`/notifications`)
+
+알림 관련 API의 베이스 경로는 `/api/notifications` 입니다.
+좋아요·댓글·팔로우·멘션 시 `@TransactionalEventListener` + `@Async`로 비동기 알림이 자동 저장됩니다. 자기 자신에 대한 알림(내 게시물에 내가 좋아요 등)은 서버에서 필터링되어 저장되지 않습니다.
+
+### 6.1 알림 목록 조회 — 커서 기반
+- **URL**: `/api/notifications`
+- **Method**: `GET`
+- **Description**: 로그인 유저의 알림 목록을 커서 기반으로 조회합니다. `type`과 `isRead` 필터를 선택적으로 조합할 수 있습니다.
+- **Authentication**: **필수** (`Authorization: Bearer <AccessToken>`)
+- **Query Parameters**:
+    - `type`: 알림 종류 필터 — `LIKE`, `COMMENT`, `FOLLOW`, `MENTION` 중 하나 (선택, 생략 시 전체)
+    - `isRead`: 읽음 여부 필터 — `true` 또는 `false` (선택, 생략 시 전체)
+    - `cursor`: 이전 페이지 마지막 항목의 `notificationId` (첫 페이지에서는 생략)
+    - `size`: 페이지 크기 (기본값: 20, 최대: 50)
+
+- **호출 예시**:
+```
+① 전체 알림 (첫 페이지):          GET /api/notifications?size=20
+② 좋아요 알림만:                   GET /api/notifications?size=20&type=LIKE
+③ 읽지 않은 알림만:                GET /api/notifications?size=20&isRead=false
+④ 읽지 않은 댓글 알림만:           GET /api/notifications?size=20&type=COMMENT&isRead=false
+⑤ 커서 페이지네이션:               GET /api/notifications?size=20&cursor=42
+```
+
+- **Response Body** (`ApiResponse<SliceResponse<NotificationResponse>>`):
+```json
+{
+  "success": true,
+  "data": {
+    "hasNext": true,
+    "items": [
+      {
+        "notificationId": 15,
+        "type": "LIKE",
+        "senderId": 3,
+        "senderUsername": "kuromi",
+        "senderProfileImageUrl": "https://example.com/profile/kuromi.jpg",
+        "targetId": 42,
+        "targetThumbnailUrl": "https://example.com/post/42_thumb.jpg",
+        "message": "kuromi님이 회원님의 게시물을 좋아합니다",
+        "isRead": false,
+        "createdAt": "2026-04-11T14:30:00"
+      },
+      {
+        "notificationId": 14,
+        "type": "FOLLOW",
+        "senderId": 5,
+        "senderUsername": "pikachu",
+        "senderProfileImageUrl": "https://example.com/profile/pikachu.jpg",
+        "targetId": null,
+        "targetThumbnailUrl": null,
+        "message": "pikachu님이 회원님을 팔로우하기 시작했습니다",
+        "isRead": false,
+        "createdAt": "2026-04-11T14:25:00"
+      }
+    ]
+  },
+  "error": null
+}
+```
+- **필드 설명** (`NotificationResponse`):
+    - `notificationId` (`long`): 알림 ID (커서로 사용)
+    - `type` (`string`): 알림 종류 — `"LIKE"`, `"COMMENT"`, `"FOLLOW"`, `"MENTION"`
+    - `senderId` (`long`): 알림을 발생시킨 사람의 회원 ID
+    - `senderUsername` (`string`): 알림을 발생시킨 사람의 username
+    - `senderProfileImageUrl` (`string | null`): 알림을 발생시킨 사람의 프로필 이미지
+    - `targetId` (`long | null`): 알림 대상 ID. LIKE·COMMENT·MENTION은 `postId`, FOLLOW는 `null`
+    - `targetThumbnailUrl` (`string | null`): 대상 게시물의 썸네일 이미지 URL. LIKE·COMMENT·MENTION은 해당 게시물의 첫 번째 이미지, FOLLOW는 `null`
+    - `message` (`string`): 알림 메시지 (예: "kuromi님이 회원님의 게시물을 좋아합니다")
+    - `isRead` (`boolean`): 읽음 여부
+    - `createdAt` (`string`): 알림 생성 시간
+- **정렬 기준**: `notificationId DESC` (최신 알림부터)
+- **커서 사용법**: 다음 페이지 요청 시 `items` 배열 마지막 항목의 `notificationId`를 `cursor`로 전달합니다. `hasNext`가 `false`이면 더 이상 데이터가 없습니다.
+
+### 6.2 알림 읽음 처리
+- **URL**: `/api/notifications/{id}/read`
+- **Method**: `PATCH`
+- **Description**: 특정 알림을 읽음 상태로 변경합니다. 본인의 알림만 읽음 처리할 수 있습니다.
+- **Authentication**: **필수** (`Authorization: Bearer <AccessToken>`)
+- **Path Parameters**:
+    - `id`: 읽음 처리할 알림 ID
+- **Request Body**: 없음
+- **Response Body** (`ApiResponse<Void>`):
+```json
+{
+  "success": true,
+  "data": null,
+  "error": null
+}
+```
+- **에러 (예시)**:
+    - **404** — 알림이 존재하지 않는 경우 (`N001`: 알림을 찾을 수 없습니다.)
+    - **403** — 남의 알림을 읽음 처리하려는 경우 (`N002`: 본인의 알림만 읽음 처리할 수 있습니다.)
+
+### 6.3 알림 종류별 트리거 (참고)
+| 알림 종류 | 트리거 액션 | 알림 받는 사람 | 알림 메시지 형식 |
+|----------|------------|--------------|----------------|
+| `LIKE` | 좋아요 누름 (취소 시에는 알림 없음) | 게시물 작성자 | "{username}님이 회원님의 게시물을 좋아합니다" |
+| `COMMENT` | 댓글 작성 | 게시물 작성자 | "{username}님이 댓글을 남겼습니다" |
+| `FOLLOW` | 팔로우 (언팔로우 시에는 알림 없음) | 팔로우 대상 | "{username}님이 회원님을 팔로우하기 시작했습니다" |
+| `MENTION` | 댓글에서 @멘션 | 멘션된 사용자 (여러 명 가능) | "{username}님이 댓글에서 회원님을 언급했습니다" |
+
+- **자기 알림 필터링**: 내가 내 게시물에 좋아요를 누르거나, 내 게시물에 댓글을 달아도 알림이 생성되지 않습니다 (`senderId == receiverId`인 경우 서버에서 무시).
 

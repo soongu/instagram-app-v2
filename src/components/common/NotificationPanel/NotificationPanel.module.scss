@@ -1,0 +1,219 @@
+// src/components/common/NotificationPanel/NotificationPanel.module.scss
+
+.notificationPanel {
+  position: fixed;
+  top: 0;
+  left: 72px;
+  width: 397px;
+  height: 100vh;
+  background-color: #fff;
+  border-right: 1px solid #dbdbdb;
+  border-radius: 0 16px 16px 0;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+  z-index: 99;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+
+  &.open {
+    transform: translateX(0);
+  }
+}
+
+// Header
+.header {
+  padding: 12px 24px 12px;
+
+  h2 {
+    font-size: 24px;
+    font-weight: 700;
+    padding: 12px 0;
+  }
+}
+
+.divider {
+  border: none;
+  height: 1px;
+  background-color: #dbdbdb;
+  margin: 0;
+}
+
+// Content
+.content {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: #c7c7c7;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+// Notification Item
+.notificationItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 24px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+
+  &:hover {
+    background-color: #f2f2f2;
+  }
+
+  &.unread {
+    background-color: #eff8ff;
+
+    &:hover {
+      background-color: #e4f1fb;
+    }
+  }
+}
+
+.notificationAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.notificationBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.notificationMessage {
+  font-size: 14px;
+  color: #262626;
+  line-height: 1.4;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.notificationTime {
+  font-size: 12px;
+  color: #8e8e8e;
+  margin-top: 2px;
+  display: block;
+}
+
+.notificationThumbnail {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.unreadDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #0095f6;
+  flex-shrink: 0;
+}
+
+// Empty state
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #8e8e8e;
+  font-size: 14px;
+}
+
+// Skeleton
+@keyframes shimmer {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.skeletonItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 24px;
+}
+
+.skeletonAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #efefef;
+  flex-shrink: 0;
+  animation: shimmer 1.5s infinite linear;
+}
+
+.skeletonTextGroup {
+  flex: 1;
+}
+
+.skeletonMessage {
+  height: 14px;
+  width: 80%;
+  border-radius: 4px;
+  background: #efefef;
+  animation: shimmer 1.5s infinite linear;
+  margin-bottom: 6px;
+}
+
+.skeletonTime {
+  height: 12px;
+  width: 50px;
+  border-radius: 4px;
+  background: #efefef;
+  animation: shimmer 1.5s infinite linear;
+}
+
+// Infinite scroll
+.sentinel {
+  height: 1px;
+}
+
+.loadingMore {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #dbdbdb;
+  border-top-color: #8e8e8e;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
