@@ -6,10 +6,12 @@ import { conversationApi } from '../../../services/api';
 import { send as stompSend } from '../../../lib/websocket/stompClient';
 import { clearUnread } from '../../../store/dmSlice';
 import { onDmReceived } from '../dmEvents';
+import { onTypingReceived } from '../typingEvents';
 import MessageBubble from './MessageBubble';
 import DateDivider from './DateDivider';
 import NewMessagesDivider from './NewMessagesDivider';
 import MessageInput from './MessageInput';
+import TypingBubble from './TypingBubble';
 import styles from './MessagePane.module.scss';
 
 const PAGE_SIZE = 20;
@@ -68,6 +70,9 @@ const MessagePane = ({ conversation, onBack }) => {
   const [hasNext, setHasNext] = useState(false);
   // 진입 시 markAllRead 가 flip 시킨 메시지 수 — "New messages" 구분선 배치에 사용
   const [newMessagesBoundaryId, setNewMessagesBoundaryId] = useState(null);
+  // 상대방 "입력 중" 표시 여부. 서버 규약상 typing:false 수신 혹은 5초 inactivity 로 자체 소거.
+  const [isOtherTyping, setIsOtherTyping] = useState(false);
+  const typingTimeoutRef = useRef(null);
   const cursorRef = useRef(null); // next cursor = oldest messageId in buffer
   const scrollRef = useRef(null);
   const isFetchingRef = useRef(false);
@@ -184,6 +189,43 @@ const MessagePane = ({ conversation, onBack }) => {
     }
   }, [hasNext, loadOlder]);
 
+  // 상대방 typing 이벤트 수신. typing:true 시 5초 TTL 로 재무장하고, typing:false 수신 시 즉시 해제.
+  useEffect(() => {
+    if (!conversationId) return undefined;
+    const off = onTypingReceived((payload) => {
+      if (payload.conversationId !== conversationId) return;
+      if (payload.senderUsername === myUsername) return; // 본인 에코는 없지만 방어적 체크
+
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+
+      if (payload.typing) {
+        setIsOtherTyping(true);
+        typingTimeoutRef.current = setTimeout(() => {
+          setIsOtherTyping(false);
+          typingTimeoutRef.current = null;
+        }, 5000);
+      } else {
+        setIsOtherTyping(false);
+      }
+    });
+    return () => {
+      off();
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+      setIsOtherTyping(false);
+    };
+  }, [conversationId, myUsername]);
+
+  // 내가 DM 을 송신/수신하면 상대방 typing 표시는 더 이상 유효하지 않다
+  useEffect(() => {
+    if (messages.length > 0) setIsOtherTyping(false);
+  }, [messages.length]);
+
   // 이 대화방으로 들어오는 실시간 DM 을 append.
   // 서버는 보낸 본인에게도 동일한 DTO 를 echo 하므로 이 한 갈래로 내/상대 메시지 모두 처리된다.
   useEffect(() => {
@@ -263,7 +305,7 @@ const MessagePane = ({ conversation, onBack }) => {
           <div className={styles.loadingInitial}>
             <div className={styles.spinner} />
           </div>
-        ) : messages.length === 0 ? (
+        ) : messages.length === 0 && !isOtherTyping ? (
           <div className={styles.empty}>아직 메시지가 없습니다. 대화를 시작해 보세요!</div>
         ) : (
           messages.map((m, idx) => {
@@ -289,9 +331,13 @@ const MessagePane = ({ conversation, onBack }) => {
             );
           })
         )}
+
+        {isOtherTyping && !isLoading && (
+          <TypingBubble avatarUrl={conversation.otherMemberProfileImageUrl} />
+        )}
       </div>
 
-      <MessageInput onSend={handleSend} />
+      <MessageInput onSend={handleSend} conversationId={conversationId} />
     </section>
   );
 };
