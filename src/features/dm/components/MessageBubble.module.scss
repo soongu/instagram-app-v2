@@ -1,0 +1,84 @@
+.row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 0 16px;
+  margin: 2px 0;
+}
+
+.mine {
+  justify-content: flex-end;
+}
+
+.other {
+  justify-content: flex-start;
+}
+
+.avatarSlot {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: #efefef;
+  display: block;
+}
+
+.bubble {
+  max-width: 60%;
+  padding: 8px 14px;
+  font-size: 15px;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border-radius: 22px;
+}
+
+.bubbleMine {
+  background-color: #3797f0;
+  color: #fff;
+}
+
+.bubbleOther {
+  background-color: #efefef;
+  color: #000;
+}
+
+.pos-single {
+}
+
+.pos-first {
+  &.bubbleMine {
+    border-bottom-right-radius: 6px;
+  }
+  &.bubbleOther {
+    border-bottom-left-radius: 6px;
+  }
+}
+
+.pos-middle {
+  &.bubbleMine {
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+  }
+  &.bubbleOther {
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+  }
+}
+
+.pos-last {
+  &.bubbleMine {
+    border-top-right-radius: 6px;
+  }
+  &.bubbleOther {
+    border-top-left-radius: 6px;
+  }
+}

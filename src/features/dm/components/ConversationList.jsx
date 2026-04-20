@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { FaPenToSquare } from 'react-icons/fa6';
-import { conversationApi } from '../../../services/api';
 import ConversationItem from './ConversationItem';
 import styles from './ConversationList.module.scss';
 
@@ -11,35 +10,16 @@ const TABS = [
   { key: 'requests', label: '요청' },
 ];
 
-const ConversationList = ({ selectedConversationId, onSelect }) => {
+const ConversationList = ({
+  conversations,
+  isLoading,
+  selectedConversationId,
+  onSelect,
+}) => {
   const storedUser = useSelector((state) => state.auth.user);
   const unreadByConversationId = useSelector((state) => state.dm.unreadByConversationId);
 
-  const [conversations, setConversations] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('primary');
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      setIsLoading(true);
-      try {
-        const data = await conversationApi.list();
-        if (!cancelled) setConversations(data ?? []);
-      } catch (err) {
-        console.error('[DM] 대화방 목록 조회 실패:', err);
-        if (!cancelled) setConversations([]);
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    };
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   return (
     <aside className={styles.container}>
