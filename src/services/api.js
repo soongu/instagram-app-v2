@@ -232,3 +232,26 @@ export const memberApi = {
   search: (keyword, cursor, size = 20) =>
     api.get(`/members/search?keyword=${encodeURIComponent(keyword)}&size=${size}${cursor ? `&cursor=${cursor}` : ''}`),
 };
+
+// DM 대화방 / 메시지 API
+export const conversationApi = {
+  // 내 대화방 목록
+  list: () => api.get('/conversations'),
+
+  // 1:1 대화방 생성 (또는 기존 반환)
+  createOrGet: (targetMemberId) => api.post(`/conversations/${targetMemberId}`),
+
+  // 대화방 삭제 (나가기)
+  remove: (conversationId) => api.delete(`/conversations/${conversationId}`),
+
+  // 메시지 이력 (커서 기반, 최신→과거)
+  getMessages: (conversationId, cursor, size = 20) => {
+    let url = `/conversations/${conversationId}/messages?size=${size}`;
+    if (cursor) url += `&cursor=${cursor}`;
+    return api.get(url);
+  },
+
+  // 대화방 진입 시 상대방 메시지 일괄 읽음 처리
+  markAllRead: (conversationId) =>
+    api.patch(`/conversations/${conversationId}/messages/read`),
+};

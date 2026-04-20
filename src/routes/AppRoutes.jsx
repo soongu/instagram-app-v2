@@ -7,6 +7,7 @@ import AuthRequired from "./AuthRequired.jsx";
 import AuthPage from "../pages/auth/AuthPage.jsx";
 import ProfilePage from "../pages/profile/ProfilePage.jsx";
 import HashtagSearchPage from "../pages/hashtag/HashtagSearchPage.jsx";
+import DirectPage from "../pages/direct/DirectPage.jsx";
 import {profileApi} from "../services/api.js";
 
 const router = createHashRouter([
@@ -21,6 +22,18 @@ const router = createHashRouter([
       {
         path: 'explore/search/keyword',
         element: <HashtagSearchPage/>,
+      },
+      {
+        path: 'direct',
+        element: <Navigate to="/direct/inbox" replace/>,
+      },
+      {
+        path: 'direct/inbox',
+        element: <DirectPage/>,
+      },
+      {
+        path: 'direct/t/:conversationId',
+        element: <DirectPage/>,
       },
       {
         path: ':username',

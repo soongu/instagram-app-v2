@@ -1,0 +1,177 @@
+.container {
+  width: 400px;
+  min-width: 400px;
+  height: 100vh;
+  border-right: 1px solid #dbdbdb;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 36px 24px 12px;
+}
+
+.usernameButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+
+.username {
+  font-size: 20px;
+  font-weight: 700;
+  color: #000;
+}
+
+.caret {
+  font-size: 14px;
+  color: #000;
+  display: inline-flex;
+  align-items: center;
+}
+
+.composeButton {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    opacity: 0.6;
+  }
+}
+
+.tabs {
+  display: flex;
+  padding: 0 24px;
+  border-bottom: 1px solid #dbdbdb;
+}
+
+.tab {
+  flex: 1;
+  padding: 16px 0;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #737373;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.1s ease;
+
+  &:hover {
+    color: #000;
+  }
+}
+
+.tabActive {
+  color: #000;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: #000;
+  }
+}
+
+.search {
+  padding: 16px 24px 8px;
+}
+
+.searchInput {
+  width: 100%;
+  background-color: #efefef;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #000;
+
+  &::placeholder {
+    color: #737373;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.listScroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 12px;
+}
+
+.emptyState {
+  padding: 32px 24px;
+  color: #737373;
+  font-size: 14px;
+  text-align: center;
+}
+
+.skeletonItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 24px;
+  height: 72px;
+}
+
+.skeletonAvatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #efefef;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+.skeletonText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skeletonLine {
+  height: 12px;
+  width: 70%;
+  background-color: #efefef;
+  border-radius: 6px;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+.skeletonLineShort {
+  height: 10px;
+  width: 40%;
+  background-color: #efefef;
+  border-radius: 6px;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

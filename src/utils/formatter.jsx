@@ -97,3 +97,19 @@ export const formatDate = (dateString) => {
     day: 'numeric'
   }).format(date);
 };
+
+// DM 대화방 목록용 짧은 상대시간 ("방금", "5분", "2시간", "3일", "2주", "5개월", "1년")
+// Instagram DM 사이드바 스타일 — "전" 접미사 없음
+export const formatShortRelative = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const diff = Math.floor((Date.now() - date.getTime()) / 1000);
+
+  if (diff < 60) return '방금';
+  if (diff < 3600) return `${Math.floor(diff / 60)}분`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}시간`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)}일`;
+  if (diff < 2592000) return `${Math.floor(diff / 604800)}주`;
+  if (diff < 31536000) return `${Math.floor(diff / 2592000)}개월`;
+  return `${Math.floor(diff / 31536000)}년`;
+};
