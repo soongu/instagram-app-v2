@@ -3,8 +3,10 @@ import { FaRegFaceSmile, FaMicrophone, FaImage } from 'react-icons/fa6';
 import { send as stompSend } from '../../../lib/websocket/stompClient';
 import styles from './MessageInput.module.scss';
 
-// 상대방에게 "입력 중" 신호를 3초마다 유지. 3초 inactivity 시 stop, send 시에도 stop.
+// 3초 inactivity 에 typing:false, 그 이전에는 3초 주기로 typing:true 하트비트를 다시 발사.
+// 수신 측 TTL 이 5초 이므로 3초 하트비트면 상대가 계속 치는 동안 버블이 유지된다.
 const TYPING_STOP_DELAY_MS = 3000;
+const TYPING_HEARTBEAT_MS = 3000;
 
 const sendTyping = (conversationId, typing) => {
   if (!conversationId) return;
@@ -14,8 +16,10 @@ const sendTyping = (conversationId, typing) => {
 const MessageInput = ({ onSend, disabled, conversationId }) => {
   const [value, setValue] = useState('');
 
-  // 현재 "입력 중" 상태로 서버에 알린 값 — 동일 상태 반복 전송 방지 (스팸 방지)
-  const lastSentTypingRef = useRef(false);
+  // 현재 상대에게 "타이핑 중" 임을 알리고 있는지
+  const isTypingOnRef = useRef(false);
+  // 마지막으로 typing:true 를 보낸 시각 (하트비트 레이트리밋)
+  const lastTypingSentAtRef = useRef(0);
   // inactivity 타이머 핸들
   const stopTimerRef = useRef(null);
 
@@ -26,27 +30,35 @@ const MessageInput = ({ onSend, disabled, conversationId }) => {
     }
   };
 
-  const setTyping = (typing) => {
-    if (lastSentTypingRef.current === typing) return;
-    lastSentTypingRef.current = typing;
-    sendTyping(conversationId, typing);
+  const sendTypingOn = () => {
+    // 최소 TYPING_HEARTBEAT_MS 간격으로만 실제 전송 (스팸 방지)
+    const now = Date.now();
+    if (now - lastTypingSentAtRef.current < TYPING_HEARTBEAT_MS) return;
+    lastTypingSentAtRef.current = now;
+    isTypingOnRef.current = true;
+    sendTyping(conversationId, true);
+  };
+
+  const sendTypingOff = () => {
+    if (!isTypingOnRef.current) return;
+    isTypingOnRef.current = false;
+    lastTypingSentAtRef.current = 0;
+    sendTyping(conversationId, false);
   };
 
   // 대화방이 바뀌거나 언마운트되면, 이전 대화방에 typing:false 전송
   useEffect(() => {
     return () => {
       clearStopTimer();
-      if (lastSentTypingRef.current) {
-        sendTyping(conversationId, false);
-        lastSentTypingRef.current = false;
-      }
+      sendTypingOff();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
 
   const armStopTimer = () => {
     clearStopTimer();
     stopTimerRef.current = setTimeout(() => {
-      setTyping(false);
+      sendTypingOff();
       stopTimerRef.current = null;
     }, TYPING_STOP_DELAY_MS);
   };
@@ -56,11 +68,12 @@ const MessageInput = ({ onSend, disabled, conversationId }) => {
     setValue(next);
 
     if (next.length > 0) {
-      setTyping(true);
+      // 키 입력마다 heartbeat 레이트리밋 체크 후 typing:true 재송신
+      sendTypingOn();
       armStopTimer();
     } else {
       clearStopTimer();
-      setTyping(false);
+      sendTypingOff();
     }
   };
 
@@ -71,7 +84,7 @@ const MessageInput = ({ onSend, disabled, conversationId }) => {
     if (ok !== false) {
       setValue('');
       clearStopTimer();
-      setTyping(false);
+      sendTypingOff();
     }
   };
 
