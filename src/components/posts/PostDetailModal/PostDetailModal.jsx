@@ -127,6 +127,7 @@ const PostDetailModal = () => {
             images: (response.imageUrls ?? []).map((imageUrl) => ({ imageUrl })),
             user: response.writer
               ? {
+                  memberId: response.writer.memberId,
                   username: response.writer.username,
                   profileImage: response.writer.profileImageUrl,
                 }
@@ -269,7 +270,13 @@ const PostDetailModal = () => {
             onLoadMoreComments={loadMoreComments}
             isCommentsLoading={isCommentsLoading}
           />
-          <PostActions postId={postId} likeStatus={post.likeStatus} />
+          <PostActions
+            postId={postId}
+            likeStatus={post.likeStatus}
+            authorMemberId={post.user?.memberId}
+            authorUsername={post.user?.username}
+            onBeforeNavigate={closeModal}
+          />
           {/* 댓글 입력창 */}
           <div className={styles.comment}>
             <CommentForm feedId={postId} onCommentAdded={() => refreshComments(true)} />

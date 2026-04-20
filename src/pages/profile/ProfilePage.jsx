@@ -1,6 +1,7 @@
 // src/pages/ProfilePage.jsx
-import { useLoaderData } from 'react-router-dom';
+import { useLoaderData, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import styles from './ProfilePage.module.scss';
 import {FaGear} from "react-icons/fa6";
 import ProfileImage from "../../components/profile/ProfileImage.jsx";
@@ -8,10 +9,14 @@ import ProfileFeed from "../../components/profile/ProfileFeed.jsx";
 import { followApi } from "../../services/api.js";
 import FollowModal from "../../components/profile/FollowModal/FollowModal.jsx";
 import { formatCount } from "../../utils/formatter.jsx";
+import { startDmWithMemberId } from "../../features/dm/startDm.js";
+import { showToast } from "../../store/toastSlice.js";
 
 const ProfilePage = () => {
   // loader에서 불러온 프로필 데이터
   const profileData = useLoaderData();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const isMyProfile = profileData?.isCurrentUser ?? false;
   
@@ -58,6 +63,15 @@ const ProfilePage = () => {
     setIsModalOpen(true);
   };
 
+  const handleStartDm = async () => {
+    try {
+      await startDmWithMemberId(profileData.memberId, navigate);
+    } catch (err) {
+      console.error('대화방 생성 실패:', err);
+      dispatch(showToast({ message: '메시지를 보낼 수 없습니다.', type: 'error' }));
+    }
+  };
+
   const renderActionButtons = () => {
     if (isMyProfile) {
       return (
@@ -81,7 +95,7 @@ const ProfilePage = () => {
         >
           {isFollowing ? '팔로잉' : '팔로우'}
         </button>
-        <button className={styles.messageButton}>
+        <button className={styles.messageButton} onClick={handleStartDm}>
           메시지 보내기
         </button>
       </>

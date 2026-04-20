@@ -42,7 +42,12 @@ const FeedItem = ({ post }) => {
         <Carousel items={post.images} type="image" onImageDoubleClick={handleDblClick} />
       </div>
 
-      <FeedItemActions postId={post.feed_id} openModal={openModal} likeStatus={post.likeStatus} />
+      <FeedItemActions
+        postId={post.feed_id}
+        openModal={openModal}
+        likeStatus={post.likeStatus}
+        authorUsername={post.username}
+      />
 
       <div className={styles.content}>
         <FeedItemContent username={post.username} content={post.content} createdAt={post.createdAt} />
