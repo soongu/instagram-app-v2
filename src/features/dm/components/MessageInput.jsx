@@ -13,6 +13,9 @@ const MessageInput = ({ onSend, disabled }) => {
   };
 
   const handleKeyDown = (e) => {
+    // 한글(IME) 조합 중 Enter 는 조합 완료용이므로 무시 — 그렇지 않으면 한 번 더 눌릴 때 같은 문장이
+    // 두 번 전송된다. nativeEvent.isComposing / keyCode 229 는 같은 조건을 가리키는 표준 신호.
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       submit();
