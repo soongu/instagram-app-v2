@@ -75,6 +75,7 @@ const MessagePane = ({ conversation, onBack }) => {
   const typingTimeoutRef = useRef(null);
   const cursorRef = useRef(null); // next cursor = oldest messageId in buffer
   const scrollRef = useRef(null);
+  const topSentinelRef = useRef(null);
   const isFetchingRef = useRef(false);
   // 과거 페이지 prepend 시 스크롤 점프 방지용
   const preserveScrollRef = useRef(null);
@@ -186,25 +187,26 @@ const MessagePane = ({ conversation, onBack }) => {
     }
   }, [hasNext, conversationId]);
 
-  const handleScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    if (el.scrollTop < 80 && hasNext && !isFetchingRef.current) {
-      loadOlder();
-    }
-  }, [hasNext, loadOlder]);
-
-  // 페이지가 뷰포트보다 짧아 스크롤이 아예 생기지 않은 경우, 자동으로 다음 페이지를 당겨온다.
-  // 이렇게 하지 않으면 사용자가 위로 스크롤할 수 없어 loadOlder 가 영원히 트리거되지 않는다.
+  // 상단 센티넬이 스크롤 컨테이너와 교차하면 다음 페이지를 당겨온다.
+  // 페이지가 뷰포트보다 짧아 스크롤이 없는 경우에도 센티넬이 처음부터 보이므로
+  // 자동으로 연쇄 loadOlder 가 일어나 overflow 발생 또는 hasNext=false 까지 채운다.
   useEffect(() => {
-    if (isLoading || isLoadingOlder) return;
-    if (!hasNext) return;
-    const el = scrollRef.current;
-    if (!el) return;
-    if (el.scrollHeight <= el.clientHeight + 80) {
-      loadOlder();
-    }
-  }, [messages, isLoading, isLoadingOlder, hasNext, loadOlder]);
+    const el = topSentinelRef.current;
+    const rootEl = scrollRef.current;
+    if (!el || !rootEl) return undefined;
+    if (!hasNext || isLoading || isLoadingOlder) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !isFetchingRef.current) {
+          loadOlder();
+        }
+      },
+      { root: rootEl, threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNext, isLoading, isLoadingOlder, loadOlder]);
 
   // 상대방 typing 이벤트 수신. typing:true 시 5초 TTL 로 재무장하고, typing:false 수신 시 즉시 해제.
   useEffect(() => {
@@ -311,7 +313,9 @@ const MessagePane = ({ conversation, onBack }) => {
         </div>
       </header>
 
-      <div className={styles.scroll} ref={scrollRef} onScroll={handleScroll}>
+      <div className={styles.scroll} ref={scrollRef}>
+        {hasNext && !isLoading && <div ref={topSentinelRef} className={styles.topSentinel} />}
+
         {isLoadingOlder && (
           <div className={styles.loadingOlder}>
             <div className={styles.spinner} />

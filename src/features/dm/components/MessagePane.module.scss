@@ -99,6 +99,11 @@
   flex-direction: column;
 }
 
+.topSentinel {
+  height: 1px;
+  flex-shrink: 0;
+}
+
 .loadingInitial,
 .loadingOlder {
   display: flex;
