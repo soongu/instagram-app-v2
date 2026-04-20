@@ -82,18 +82,39 @@
 }
 
 .notificationAvatar {
+  position: relative;
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  overflow: hidden;
   flex-shrink: 0;
 
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    border-radius: 50%;
   }
 }
+
+.typeBadge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  border: 2px solid #fff;
+}
+
+.badgeLike { background: #ed4956; }
+.badgeComment { background: #0095f6; }
+.badgeFollow { background: #8e44ad; }
+.badgeMention { background: #f6a62f; }
+.badgeDm { background: #1ea7fd; }
 
 .notificationBody {
   flex: 1;

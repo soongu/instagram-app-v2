@@ -1,12 +1,38 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import {
+  FaHeart,
+  FaRegComment,
+  FaUserPlus,
+  FaAt,
+  FaRegPaperPlane,
+} from 'react-icons/fa6';
 import { notificationApi } from '../../../services/api';
 import { closeNotificationPanel } from '../../../store/notificationPanelSlice';
 import { openPostModal } from '../../../store/postModalSlice';
 import { formatDate } from '../../../utils/formatter.jsx';
 import defaultProfileImage from '../../../assets/images/default-profile.svg';
 import styles from './NotificationPanel.module.scss';
+
+const TYPE_BADGE = {
+  LIKE: { icon: FaHeart, className: 'badgeLike' },
+  COMMENT: { icon: FaRegComment, className: 'badgeComment' },
+  FOLLOW: { icon: FaUserPlus, className: 'badgeFollow' },
+  MENTION: { icon: FaAt, className: 'badgeMention' },
+  DM: { icon: FaRegPaperPlane, className: 'badgeDm' },
+};
+
+const TypeBadge = ({ type }) => {
+  const def = TYPE_BADGE[type];
+  if (!def) return null;
+  const Icon = def.icon;
+  return (
+    <span className={`${styles.typeBadge} ${styles[def.className]}`} aria-hidden>
+      <Icon size={10} />
+    </span>
+  );
+};
 
 const NotificationPanel = () => {
   const isOpen = useSelector((state) => state.notificationPanel.isOpen);
@@ -132,6 +158,9 @@ const NotificationPanel = () => {
     if (notification.type === 'FOLLOW') {
       dispatch(closeNotificationPanel());
       navigate(`/${notification.senderUsername}`);
+    } else if (notification.type === 'DM' && notification.targetId) {
+      dispatch(closeNotificationPanel());
+      navigate(`/direct/t/${notification.targetId}`);
     } else if (notification.targetId) {
       // LIKE, COMMENT, MENTION → 게시물 모달
       dispatch(closeNotificationPanel());
@@ -171,6 +200,7 @@ const NotificationPanel = () => {
                     src={n.senderProfileImageUrl || defaultProfileImage}
                     alt={n.senderUsername}
                   />
+                  <TypeBadge type={n.type} />
                 </div>
                 <div className={styles.notificationBody}>
                   <p className={styles.notificationMessage}>{n.message}</p>
