@@ -240,11 +240,6 @@ const MessagePane = ({ conversation, onBack }) => {
     };
   }, [conversationId, myUsername]);
 
-  // 내가 DM 을 송신/수신하면 상대방 typing 표시는 더 이상 유효하지 않다
-  useEffect(() => {
-    if (messages.length > 0) setIsOtherTyping(false);
-  }, [messages.length]);
-
   // 이 대화방으로 들어오는 실시간 DM 을 append.
   // 서버는 보낸 본인에게도 동일한 DTO 를 echo 하므로 이 한 갈래로 내/상대 메시지 모두 처리된다.
   useEffect(() => {
@@ -255,6 +250,10 @@ const MessagePane = ({ conversation, onBack }) => {
         if (prev.some((m) => m.messageId === incoming.messageId)) return prev;
         return [...prev, incoming];
       });
+
+      // 실제 새 메시지가 append 되었을 때만 typing 표시 해제.
+      // (loadOlder 의 prepend 나 초기 로드 시엔 끄지 않는다)
+      setIsOtherTyping(false);
 
       // 상대가 보낸 메시지면, 대화방이 열려 있으므로 바로 읽음 처리
       if (incoming.senderUsername !== myUsername) {
