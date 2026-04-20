@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { FaRegPaperPlane } from 'react-icons/fa6';
@@ -9,6 +9,7 @@ import {
   setSelectedConversation,
   clearSelectedConversation,
 } from '../../store/dmSlice';
+import { onDmReceived } from '../../features/dm/dmEvents';
 import styles from './DirectPage.module.scss';
 
 const DirectPage = () => {
@@ -21,6 +22,11 @@ const DirectPage = () => {
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
 
   const parsedId = conversationIdParam ? Number(conversationIdParam) : null;
+
+  // 실시간 DM 수신 시 대화방 목록 prepend + 마지막 메시지/시각 갱신.
+  // 알 수 없는 conversationId 가 오면 목록을 REST 로 재조회.
+  const conversationsRef = useRef(conversations);
+  conversationsRef.current = conversations;
 
   useEffect(() => {
     if (parsedId) dispatch(setSelectedConversation(parsedId));
@@ -44,6 +50,31 @@ const DirectPage = () => {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    return onDmReceived((incoming) => {
+      if (!incoming?.conversationId) return;
+      const current = conversationsRef.current;
+      const idx = current.findIndex((c) => c.conversationId === incoming.conversationId);
+
+      if (idx === -1) {
+        // 새 대화방 (상대가 처음으로 메시지를 보낸 경우 등) — 목록 재조회
+        conversationApi.list()
+          .then((data) => setConversations(data ?? []))
+          .catch((err) => console.warn('[DM] 대화방 목록 재조회 실패:', err));
+        return;
+      }
+
+      const updated = {
+        ...current[idx],
+        lastMessage: incoming.content,
+        lastMessageAt: incoming.createdAt,
+      };
+      // 해당 항목을 최상단으로 끌어올림
+      const next = [updated, ...current.slice(0, idx), ...current.slice(idx + 1)];
+      setConversations(next);
+    });
   }, []);
 
   const handleSelect = (conversationId) => {

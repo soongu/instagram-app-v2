@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { FaPhone, FaVideo, FaCircleInfo } from 'react-icons/fa6';
 import defaultProfileImage from '../../../assets/images/default-profile.svg';
 import { conversationApi } from '../../../services/api';
 import { send as stompSend } from '../../../lib/websocket/stompClient';
+import { clearUnread } from '../../../store/dmSlice';
 import { onDmReceived } from '../dmEvents';
 import MessageBubble from './MessageBubble';
 import DateDivider from './DateDivider';
+import NewMessagesDivider from './NewMessagesDivider';
 import MessageInput from './MessageInput';
 import styles from './MessagePane.module.scss';
 
@@ -39,14 +41,33 @@ const computePosition = (messages, index) => {
   return 'last';
 };
 
+// 현재 로드된 chronologicalMessages 중 "N 번째로 최근의 상대 메시지" 의 messageId 를 반환한다.
+// 그 메시지 바로 앞에 "New messages" 구분선이 놓인다.
+const computeNewMessagesBoundary = (messages, unreadCount, myUsername) => {
+  if (unreadCount <= 0) return null;
+  let seen = 0;
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const m = messages[i];
+    if (m.senderUsername !== myUsername) {
+      seen += 1;
+      if (seen === unreadCount) return m.messageId;
+    }
+  }
+  // 모두 unread 인 경우 → 맨 처음 상대 메시지 앞에 표시
+  return messages.find((m) => m.senderUsername !== myUsername)?.messageId ?? null;
+};
+
 const MessagePane = ({ conversation }) => {
   const conversationId = conversation?.conversationId ?? null;
   const myUsername = useSelector((state) => state.auth.user?.username);
+  const dispatch = useDispatch();
 
   const [messages, setMessages] = useState([]); // oldest → newest
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingOlder, setIsLoadingOlder] = useState(false);
   const [hasNext, setHasNext] = useState(false);
+  // 진입 시 markAllRead 가 flip 시킨 메시지 수 — "New messages" 구분선 배치에 사용
+  const [newMessagesBoundaryId, setNewMessagesBoundaryId] = useState(null);
   const cursorRef = useRef(null); // next cursor = oldest messageId in buffer
   const scrollRef = useRef(null);
   const isFetchingRef = useRef(false);
@@ -62,16 +83,19 @@ const MessagePane = ({ conversation }) => {
     let cancelled = false;
     setMessages([]);
     setHasNext(false);
+    setNewMessagesBoundaryId(null);
     cursorRef.current = null;
     hasSnappedToBottomRef.current = false;
     setIsLoading(true);
+    dispatch(clearUnread(conversationId));
 
     const loadInitial = async () => {
       try {
-        const [sliceRes] = await Promise.all([
+        const [sliceRes, newlyReadCount] = await Promise.all([
           conversationApi.getMessages(conversationId, null, PAGE_SIZE),
           conversationApi.markAllRead(conversationId).catch((err) => {
             console.warn('[DM] markAllRead 실패:', err);
+            return 0;
           }),
         ]);
         if (cancelled) return;
@@ -81,6 +105,9 @@ const MessagePane = ({ conversation }) => {
         setMessages(chronological);
         setHasNext(sliceRes?.hasNext ?? false);
         if (page.length > 0) cursorRef.current = page[page.length - 1].messageId;
+
+        const boundary = computeNewMessagesBoundary(chronological, newlyReadCount | 0, myUsername);
+        setNewMessagesBoundaryId(boundary);
       } catch (err) {
         console.error('[DM] 메시지 이력 조회 실패:', err);
         if (!cancelled) setMessages([]);
@@ -93,7 +120,7 @@ const MessagePane = ({ conversation }) => {
     return () => {
       cancelled = true;
     };
-  }, [conversationId]);
+  }, [conversationId, dispatch, myUsername]);
 
   // 스크롤 동기화:
   // 1) 과거 페이지 prepend → 직전 스냅샷으로 위치 복원 (점프 방지)
@@ -235,10 +262,12 @@ const MessagePane = ({ conversation }) => {
             const showDate = !prev || !isSameDay(prev.createdAt, m.createdAt);
             const position = computePosition(messages, idx);
             const showAvatar = !isMine && position !== 'first' && position !== 'middle';
+            const showNewDivider = newMessagesBoundaryId === m.messageId;
 
             return (
               <div key={m.messageId}>
                 {showDate && <DateDivider dateString={m.createdAt} />}
+                {showNewDivider && <NewMessagesDivider />}
                 <MessageBubble
                   message={m}
                   isMine={isMine}
