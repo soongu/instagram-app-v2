@@ -23,11 +23,15 @@
   display: block;
 }
 
+// 일반 MessageBubble(single-line) 과 동일한 상자 크기 유지:
+// font-size 15 * line-height 1.35 ≈ 20.25px 컨텐츠 + 패딩 8px × 2 = ~36px
 .bubble {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 10px 14px;
+  padding: 8px 14px;
+  min-height: 36px;
+  box-sizing: border-box;
   background-color: #efefef;
   border-radius: 22px;
 }
