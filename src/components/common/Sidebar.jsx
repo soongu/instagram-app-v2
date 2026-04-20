@@ -21,6 +21,7 @@ import {useSelector, useDispatch} from "react-redux";
 import { openCreateFeedModal } from '../../store/createFeedModalSlice';
 import { toggleSearchPanel, closeSearchPanel } from '../../store/searchPanelSlice';
 import { toggleNotificationPanel, closeNotificationPanel } from '../../store/notificationPanelSlice';
+import { clearUnreadCount } from '../../store/notificationsSlice';
 import CreateFeedModal from '../feed/CreateFeedModal/index';
 import SearchPanel from './SearchPanel/SearchPanel';
 import NotificationPanel from './NotificationPanel/NotificationPanel';
@@ -30,6 +31,9 @@ const Sidebar = () => {
   const storedUser = useSelector(state => state.auth.user);
   const isSearchOpen = useSelector(state => state.searchPanel.isOpen);
   const isNotificationOpen = useSelector(state => state.notificationPanel.isOpen);
+  const unreadNotifications = useSelector(state => state.notifications.unreadCount);
+  const dmUnreadByConversationId = useSelector(state => state.dm.unreadByConversationId);
+  const dmUnreadTotal = Object.values(dmUnreadByConversationId).reduce((a, b) => a + b, 0);
   const dispatch = useDispatch();
 
   const isPanelOpen = isSearchOpen || isNotificationOpen;
@@ -59,6 +63,8 @@ const Sidebar = () => {
 
   const handleNotificationToggle = () => {
     if (isSearchOpen) dispatch(closeSearchPanel());
+    // 패널 여는 동작 = 사용자가 뱃지 확인 → 클리어 (실제 read 처리는 항목 클릭 시 각각)
+    if (!isNotificationOpen) dispatch(clearUnreadCount());
     dispatch(toggleNotificationPanel());
   };
 
@@ -103,12 +109,22 @@ const Sidebar = () => {
           </NavLink>
 
           <NavLink to="/direct/inbox" className={styles.menuItem} onClick={handleNavClick}>
-            <FaRegPaperPlane size={24}/>
+            <span className={styles.iconWrap}>
+              <FaRegPaperPlane size={24}/>
+              {dmUnreadTotal > 0 && (
+                <span className={styles.badge}>{dmUnreadTotal > 99 ? '99+' : dmUnreadTotal}</span>
+              )}
+            </span>
             <span className={styles.menuText}>메시지</span>
           </NavLink>
 
           <button type="button" className={styles.menuItem} onClick={handleNotificationToggle}>
-            <FaRegHeart size={24}/>
+            <span className={styles.iconWrap}>
+              <FaRegHeart size={24}/>
+              {unreadNotifications > 0 && (
+                <span className={styles.badge}>{unreadNotifications > 99 ? '99+' : unreadNotifications}</span>
+              )}
+            </span>
             <span className={styles.menuText}>알림</span>
           </button>
 

@@ -11,6 +11,8 @@ import {
 import { notificationApi } from '../../../services/api';
 import { closeNotificationPanel } from '../../../store/notificationPanelSlice';
 import { openPostModal } from '../../../store/postModalSlice';
+import { decrementUnreadCount } from '../../../store/notificationsSlice';
+import { onNotificationReceived } from '../../../features/notifications/notificationEvents';
 import { formatDate } from '../../../utils/formatter.jsx';
 import defaultProfileImage from '../../../assets/images/default-profile.svg';
 import styles from './NotificationPanel.module.scss';
@@ -139,6 +141,19 @@ const NotificationPanel = () => {
     return () => observer.disconnect();
   }, [hasNext, isLoading, isLoadingMore, loadMore]);
 
+  // 실시간 알림 push prepend (패널이 열려있지 않아도 수집; 어차피 오픈 시 초기화되므로
+  // 열려 있을 때만 prepend 가 의미 있음)
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    return onNotificationReceived((incoming) => {
+      if (!incoming?.notificationId) return;
+      setNotifications((prev) => {
+        if (prev.some((n) => n.notificationId === incoming.notificationId)) return prev;
+        return [incoming, ...prev];
+      });
+    });
+  }, [isOpen]);
+
   const handleNotificationClick = async (notification) => {
     // 읽음 처리
     if (!notification.isRead) {
@@ -149,6 +164,7 @@ const NotificationPanel = () => {
             n.notificationId === notification.notificationId ? { ...n, isRead: true } : n
           )
         );
+        dispatch(decrementUnreadCount());
       } catch (error) {
         console.error('읽음 처리 실패:', error);
       }

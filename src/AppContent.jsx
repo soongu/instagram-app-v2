@@ -7,6 +7,7 @@ import AppRoutes from './routes/AppRoutes';
 import GlobalToast from './components/common/GlobalToast';
 import { useStomp } from './lib/websocket/useStomp';
 import { useDmRealtime } from './features/dm/useDmRealtime';
+import { useNotificationsRealtime } from './features/notifications/useNotificationsRealtime';
 
 let isReissuingPromise = null;
 
@@ -16,6 +17,7 @@ const AppContent = () => {
 
   useStomp();
   useDmRealtime();
+  useNotificationsRealtime();
 
   useEffect(() => {
     let isMounted = true;

@@ -9,6 +9,7 @@ import toastReducer from "./toastSlice.js";
 import searchPanelReducer from "./searchPanelSlice.js";
 import notificationPanelReducer from "./notificationPanelSlice.js";
 import dmReducer from "./dmSlice.js";
+import notificationsReducer from "./notificationsSlice.js";
 
 export const store = configureStore({
   reducer: {
@@ -21,5 +22,6 @@ export const store = configureStore({
     searchPanel: searchPanelReducer,
     notificationPanel: notificationPanelReducer,
     dm: dmReducer,
+    notifications: notificationsReducer,
   },
 });
