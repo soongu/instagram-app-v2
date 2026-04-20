@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { FaPenToSquare } from 'react-icons/fa6';
 import ConversationItem from './ConversationItem';
@@ -13,6 +13,9 @@ const TABS = [
 const ConversationList = ({
   conversations,
   isLoading,
+  isLoadingMore,
+  hasNext,
+  onLoadMore,
   selectedConversationId,
   onSelect,
 }) => {
@@ -20,6 +23,23 @@ const ConversationList = ({
   const unreadByConversationId = useSelector((state) => state.dm.unreadByConversationId);
 
   const [activeTab, setActiveTab] = useState('primary');
+  const sentinelRef = useRef(null);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasNext || isLoading || isLoadingMore) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          onLoadMore?.();
+        }
+      },
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNext, isLoading, isLoadingMore, onLoadMore]);
 
   return (
     <aside className={styles.container}>
@@ -66,15 +86,23 @@ const ConversationList = ({
         ) : conversations.length === 0 ? (
           <div className={styles.emptyState}>대화방이 없습니다</div>
         ) : (
-          conversations.map((c) => (
-            <ConversationItem
-              key={c.conversationId}
-              conversation={c}
-              isActive={c.conversationId === selectedConversationId}
-              unreadCount={unreadByConversationId[c.conversationId] ?? 0}
-              onClick={() => onSelect?.(c.conversationId)}
-            />
-          ))
+          <>
+            {conversations.map((c) => (
+              <ConversationItem
+                key={c.conversationId}
+                conversation={c}
+                isActive={c.conversationId === selectedConversationId}
+                unreadCount={unreadByConversationId[c.conversationId] ?? 0}
+                onClick={() => onSelect?.(c.conversationId)}
+              />
+            ))}
+            {hasNext && <div ref={sentinelRef} className={styles.sentinel} />}
+            {isLoadingMore && (
+              <div className={styles.loadingMore}>
+                <div className={styles.spinner} />
+              </div>
+            )}
+          </>
         )}
       </div>
     </aside>

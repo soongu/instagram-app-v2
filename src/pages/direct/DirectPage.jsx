@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { FaRegPaperPlane } from 'react-icons/fa6';
@@ -20,11 +20,14 @@ const DirectPage = () => {
 
   const [conversations, setConversations] = useState([]);
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
+  const [isLoadingMoreConversations, setIsLoadingMoreConversations] = useState(false);
+  const [hasNextConversations, setHasNextConversations] = useState(false);
+  const conversationsCursorRef = useRef(null);
+  const isFetchingConvRef = useRef(false);
 
   const parsedId = conversationIdParam ? Number(conversationIdParam) : null;
 
-  // 실시간 DM 수신 시 대화방 목록 prepend + 마지막 메시지/시각 갱신.
-  // 알 수 없는 conversationId 가 오면 목록을 REST 로 재조회.
+  // 실시간 DM 수신 시 대화방 목록 prepend + 마지막 메시지/시각 갱신 참조용
   const conversationsRef = useRef(conversations);
   conversationsRef.current = conversations;
 
@@ -33,15 +36,32 @@ const DirectPage = () => {
     else dispatch(clearSelectedConversation());
   }, [parsedId, dispatch]);
 
+  const applySliceResponse = useCallback((sliceRes, { append }) => {
+    const items = sliceRes?.items ?? [];
+    setHasNextConversations(sliceRes?.hasNext ?? false);
+    if (items.length > 0) {
+      conversationsCursorRef.current = items[items.length - 1].conversationId;
+    }
+    setConversations((prev) => (append ? [...prev, ...items] : items));
+  }, []);
+
+  // 첫 페이지 로드
   useEffect(() => {
     let cancelled = false;
+    conversationsCursorRef.current = null;
+    setIsLoadingConversations(true);
+
     const load = async () => {
       try {
-        const data = await conversationApi.list();
-        if (!cancelled) setConversations(data ?? []);
+        const sliceRes = await conversationApi.list(null);
+        if (cancelled) return;
+        applySliceResponse(sliceRes, { append: false });
       } catch (err) {
         console.error('[DM] 대화방 목록 조회 실패:', err);
-        if (!cancelled) setConversations([]);
+        if (!cancelled) {
+          setConversations([]);
+          setHasNextConversations(false);
+        }
       } finally {
         if (!cancelled) setIsLoadingConversations(false);
       }
@@ -50,8 +70,25 @@ const DirectPage = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [applySliceResponse]);
 
+  const loadMoreConversations = useCallback(async () => {
+    if (isFetchingConvRef.current || !hasNextConversations) return;
+    isFetchingConvRef.current = true;
+    setIsLoadingMoreConversations(true);
+    try {
+      const sliceRes = await conversationApi.list(conversationsCursorRef.current);
+      applySliceResponse(sliceRes, { append: true });
+    } catch (err) {
+      console.error('[DM] 대화방 추가 로딩 실패:', err);
+    } finally {
+      isFetchingConvRef.current = false;
+      setIsLoadingMoreConversations(false);
+    }
+  }, [hasNextConversations, applySliceResponse]);
+
+  // 실시간 DM 수신 시 리스트 prepend + 마지막 메시지 갱신.
+  // 알 수 없는 conversationId 가 오면 첫 페이지를 다시 땡겨와 동기화.
   useEffect(() => {
     return onDmReceived((incoming) => {
       if (!incoming?.conversationId) return;
@@ -59,9 +96,17 @@ const DirectPage = () => {
       const idx = current.findIndex((c) => c.conversationId === incoming.conversationId);
 
       if (idx === -1) {
-        // 새 대화방 (상대가 처음으로 메시지를 보낸 경우 등) — 목록 재조회
-        conversationApi.list()
-          .then((data) => setConversations(data ?? []))
+        conversationApi.list(null)
+          .then((sliceRes) => {
+            const items = sliceRes?.items ?? [];
+            setConversations(items);
+            setHasNextConversations(sliceRes?.hasNext ?? false);
+            if (items.length > 0) {
+              conversationsCursorRef.current = items[items.length - 1].conversationId;
+            } else {
+              conversationsCursorRef.current = null;
+            }
+          })
           .catch((err) => console.warn('[DM] 대화방 목록 재조회 실패:', err));
         return;
       }
@@ -71,7 +116,6 @@ const DirectPage = () => {
         lastMessage: incoming.content,
         lastMessageAt: incoming.createdAt,
       };
-      // 해당 항목을 최상단으로 끌어올림
       const next = [updated, ...current.slice(0, idx), ...current.slice(idx + 1)];
       setConversations(next);
     });
@@ -97,6 +141,9 @@ const DirectPage = () => {
         <ConversationList
           conversations={conversations}
           isLoading={isLoadingConversations}
+          isLoadingMore={isLoadingMoreConversations}
+          hasNext={hasNextConversations}
+          onLoadMore={loadMoreConversations}
           selectedConversationId={selectedConversationId}
           onSelect={handleSelect}
         />

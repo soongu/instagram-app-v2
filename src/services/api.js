@@ -235,8 +235,12 @@ export const memberApi = {
 
 // DM 대화방 / 메시지 API
 export const conversationApi = {
-  // 내 대화방 목록
-  list: () => api.get('/conversations'),
+  // 내 대화방 목록 — 커서 기반 (SliceResponse<ConversationResponse>)
+  list: (cursor, size = 20) => {
+    let url = `/conversations?size=${size}`;
+    if (cursor) url += `&cursor=${cursor}`;
+    return api.get(url);
+  },
 
   // 1:1 대화방 생성 (또는 기존 반환)
   createOrGet: (targetMemberId) => api.post(`/conversations/${targetMemberId}`),

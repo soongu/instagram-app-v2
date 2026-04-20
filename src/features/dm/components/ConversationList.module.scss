@@ -197,3 +197,28 @@
     opacity: 0.5;
   }
 }
+
+.sentinel {
+  height: 1px;
+}
+
+.loadingMore {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid #dbdbdb;
+  border-top-color: #737373;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
