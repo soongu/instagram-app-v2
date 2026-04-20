@@ -104,7 +104,7 @@ const MessagePane = ({ conversation, onBack }) => {
           }),
         ]);
         if (cancelled) return;
-        const page = sliceRes?.content ?? [];
+        const page = sliceRes?.items ?? [];
         // API 는 최신 → 과거. UI 는 과거 → 최신으로 뒤집어 렌더.
         const chronological = [...page].reverse();
         setMessages(chronological);
@@ -162,7 +162,12 @@ const MessagePane = ({ conversation, onBack }) => {
     setIsLoadingOlder(true);
     try {
       const sliceRes = await conversationApi.getMessages(conversationId, cursorRef.current, PAGE_SIZE);
-      const page = sliceRes?.content ?? [];
+      const page = sliceRes?.items ?? [];
+      // 방어: 빈 페이지면 더 이상 진행 불가 — hasNext 가 true 여도 강제 종료하여 루프 차단
+      if (page.length === 0) {
+        setHasNext(false);
+        return;
+      }
       const chronological = [...page].reverse();
       if (scrollRef.current) {
         preserveScrollRef.current = {
