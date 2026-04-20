@@ -85,19 +85,29 @@ const DirectPage = () => {
     ? conversations.find((c) => c.conversationId === selectedConversationId) ?? null
     : null;
 
+  const handleBackToInbox = () => {
+    navigate('/direct/inbox');
+  };
+
+  const containerClass = `${styles.container} ${selectedConversationId ? styles.hasSelection : ''}`;
+
   return (
-    <div className={styles.container}>
-      <ConversationList
-        conversations={conversations}
-        isLoading={isLoadingConversations}
-        selectedConversationId={selectedConversationId}
-        onSelect={handleSelect}
-      />
+    <div className={containerClass}>
+      <div className={styles.list}>
+        <ConversationList
+          conversations={conversations}
+          isLoading={isLoadingConversations}
+          selectedConversationId={selectedConversationId}
+          onSelect={handleSelect}
+        />
+      </div>
 
       {selectedConversation ? (
-        <MessagePane conversation={selectedConversation} />
+        <div className={styles.pane}>
+          <MessagePane conversation={selectedConversation} onBack={handleBackToInbox} />
+        </div>
       ) : (
-        <main className={styles.main}>
+        <main className={`${styles.main} ${styles.pane}`}>
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>
               <FaRegPaperPlane size={48} />

@@ -7,6 +7,30 @@
   min-width: 0;
 }
 
+// 모바일 전용 뒤로가기 버튼 — 데스크톱에서는 숨김
+.backButton {
+  display: none;
+  background: none;
+  border: none;
+  padding: 8px;
+  margin-right: 4px;
+  color: #000;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+
+  &:hover {
+    opacity: 0.6;
+  }
+}
+
+@media (max-width: 768px) {
+  .backButton {
+    display: inline-flex;
+  }
+}
+
 .header {
   display: flex;
   align-items: center;

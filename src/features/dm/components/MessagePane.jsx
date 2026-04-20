@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { FaPhone, FaVideo, FaCircleInfo } from 'react-icons/fa6';
+import { FaPhone, FaVideo, FaCircleInfo, FaChevronLeft } from 'react-icons/fa6';
 import defaultProfileImage from '../../../assets/images/default-profile.svg';
 import { conversationApi } from '../../../services/api';
 import { send as stompSend } from '../../../lib/websocket/stompClient';
@@ -57,7 +57,7 @@ const computeNewMessagesBoundary = (messages, unreadCount, myUsername) => {
   return messages.find((m) => m.senderUsername !== myUsername)?.messageId ?? null;
 };
 
-const MessagePane = ({ conversation }) => {
+const MessagePane = ({ conversation, onBack }) => {
   const conversationId = conversation?.conversationId ?? null;
   const myUsername = useSelector((state) => state.auth.user?.username);
   const dispatch = useDispatch();
@@ -219,6 +219,16 @@ const MessagePane = ({ conversation }) => {
     <section className={styles.pane}>
       <header className={styles.header}>
         <div className={styles.headerUser}>
+          {onBack && (
+            <button
+              type="button"
+              className={styles.backButton}
+              onClick={onBack}
+              aria-label="대화방 목록으로"
+            >
+              <FaChevronLeft size={20} />
+            </button>
+          )}
           <img
             src={conversation.otherMemberProfileImageUrl || defaultProfileImage}
             alt={conversation.otherMemberUsername}
