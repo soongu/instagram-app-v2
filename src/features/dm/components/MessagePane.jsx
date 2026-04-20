@@ -189,6 +189,18 @@ const MessagePane = ({ conversation, onBack }) => {
     }
   }, [hasNext, loadOlder]);
 
+  // 페이지가 뷰포트보다 짧아 스크롤이 아예 생기지 않은 경우, 자동으로 다음 페이지를 당겨온다.
+  // 이렇게 하지 않으면 사용자가 위로 스크롤할 수 없어 loadOlder 가 영원히 트리거되지 않는다.
+  useEffect(() => {
+    if (isLoading || isLoadingOlder) return;
+    if (!hasNext) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    if (el.scrollHeight <= el.clientHeight + 80) {
+      loadOlder();
+    }
+  }, [messages, isLoading, isLoadingOlder, hasNext, loadOlder]);
+
   // 상대방 typing 이벤트 수신. typing:true 시 5초 TTL 로 재무장하고, typing:false 수신 시 즉시 해제.
   useEffect(() => {
     if (!conversationId) return undefined;
