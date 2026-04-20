@@ -111,9 +111,7 @@ const Sidebar = () => {
           <NavLink to="/direct/inbox" className={styles.menuItem} onClick={handleNavClick}>
             <span className={styles.iconWrap}>
               <FaRegPaperPlane size={24}/>
-              {dmUnreadTotal > 0 && (
-                <span className={styles.badge}>{dmUnreadTotal > 99 ? '99+' : dmUnreadTotal}</span>
-              )}
+              {dmUnreadTotal > 0 && <span className={styles.badgeDot} aria-label="안읽음" />}
             </span>
             <span className={styles.menuText}>메시지</span>
           </NavLink>
@@ -121,9 +119,7 @@ const Sidebar = () => {
           <button type="button" className={styles.menuItem} onClick={handleNotificationToggle}>
             <span className={styles.iconWrap}>
               <FaRegHeart size={24}/>
-              {unreadNotifications > 0 && (
-                <span className={styles.badge}>{unreadNotifications > 99 ? '99+' : unreadNotifications}</span>
-              )}
+              {unreadNotifications > 0 && <span className={styles.badgeDot} aria-label="안읽음" />}
             </span>
             <span className={styles.menuText}>알림</span>
           </button>
