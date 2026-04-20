@@ -13,6 +13,11 @@ export default defineConfig({
       '/img': {
         target: 'http://localhost:8090',
         changeOrigin: true,
+      },
+      '/ws': {
+        target: 'http://localhost:8090',
+        changeOrigin: true,
+        ws: true,
       }
     }
   }
