@@ -6,6 +6,7 @@ import { clearToken, setUser, refreshAccessToken } from './store/authSlice.js';
 import AppRoutes from './routes/AppRoutes';
 import GlobalToast from './components/common/GlobalToast';
 import { useStomp } from './lib/websocket/useStomp';
+import { useDmRealtime } from './features/dm/useDmRealtime';
 
 let isReissuingPromise = null;
 
@@ -14,6 +15,7 @@ const AppContent = () => {
   const [isInit, setIsInit] = useState(false);
 
   useStomp();
+  useDmRealtime();
 
   useEffect(() => {
     let isMounted = true;

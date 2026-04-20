@@ -3,6 +3,8 @@ import { useSelector } from 'react-redux';
 import { FaPhone, FaVideo, FaCircleInfo } from 'react-icons/fa6';
 import defaultProfileImage from '../../../assets/images/default-profile.svg';
 import { conversationApi } from '../../../services/api';
+import { send as stompSend } from '../../../lib/websocket/stompClient';
+import { onDmReceived } from '../dmEvents';
 import MessageBubble from './MessageBubble';
 import DateDivider from './DateDivider';
 import MessageInput from './MessageInput';
@@ -50,6 +52,8 @@ const MessagePane = ({ conversation }) => {
   const isFetchingRef = useRef(false);
   // 과거 페이지 prepend 시 스크롤 점프 방지용
   const preserveScrollRef = useRef(null);
+  // 최초 페이지 로드 후 한번만 바닥으로 스냅하기 위한 플래그
+  const hasSnappedToBottomRef = useRef(false);
 
   // 대화방 진입 시 초기화 + 최초 페이지 로드 + 읽음 처리
   useEffect(() => {
@@ -59,6 +63,7 @@ const MessagePane = ({ conversation }) => {
     setMessages([]);
     setHasNext(false);
     cursorRef.current = null;
+    hasSnappedToBottomRef.current = false;
     setIsLoading(true);
 
     const loadInitial = async () => {
@@ -90,21 +95,34 @@ const MessagePane = ({ conversation }) => {
     };
   }, [conversationId]);
 
-  // 초기 로드 후 스크롤을 맨 아래로
-  useLayoutEffect(() => {
-    if (!isLoading && scrollRef.current && messages.length > 0 && preserveScrollRef.current == null) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [isLoading, messages]);
-
-  // prepend 된 과거 메시지로 인해 스크롤이 점프하지 않도록 복원
+  // 스크롤 동기화:
+  // 1) 과거 페이지 prepend → 직전 스냅샷으로 위치 복원 (점프 방지)
+  // 2) 초기 로드 직후 → 맨 아래로 스냅 (한 번만)
+  // 3) 이후 메시지 append → 사용자가 이미 바닥 근처일 때만 바닥 유지
   useLayoutEffect(() => {
     const el = scrollRef.current;
+    if (!el) return;
+
     const snapshot = preserveScrollRef.current;
-    if (!el || !snapshot) return;
-    el.scrollTop = el.scrollHeight - snapshot.scrollHeight + snapshot.scrollTop;
-    preserveScrollRef.current = null;
-  }, [messages]);
+    if (snapshot) {
+      el.scrollTop = el.scrollHeight - snapshot.scrollHeight + snapshot.scrollTop;
+      preserveScrollRef.current = null;
+      return;
+    }
+
+    if (isLoading || messages.length === 0) return;
+
+    if (!hasSnappedToBottomRef.current) {
+      el.scrollTop = el.scrollHeight;
+      hasSnappedToBottomRef.current = true;
+      return;
+    }
+
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distanceFromBottom < 200) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [isLoading, messages]);
 
   const loadOlder = useCallback(async () => {
     if (isFetchingRef.current || !hasNext || !conversationId) return;
@@ -139,9 +157,33 @@ const MessagePane = ({ conversation }) => {
     }
   }, [hasNext, loadOlder]);
 
+  // 이 대화방으로 들어오는 실시간 DM 을 append.
+  // 서버는 보낸 본인에게도 동일한 DTO 를 echo 하므로 이 한 갈래로 내/상대 메시지 모두 처리된다.
+  useEffect(() => {
+    if (!conversationId) return;
+    const off = onDmReceived((incoming) => {
+      if (incoming.conversationId !== conversationId) return;
+      setMessages((prev) => {
+        if (prev.some((m) => m.messageId === incoming.messageId)) return prev;
+        return [...prev, incoming];
+      });
+
+      // 상대가 보낸 메시지면, 대화방이 열려 있으므로 바로 읽음 처리
+      if (incoming.senderUsername !== myUsername) {
+        conversationApi.markAllRead(conversationId).catch(() => {});
+      }
+    });
+    return off;
+  }, [conversationId, myUsername]);
+
   const handleSend = (text) => {
-    // 실제 STOMP 전송은 다음 커밋에서. 현재는 UX 를 막지 않기 위해 값만 반환 false 로 두고 input 비움.
-    console.log('[DM] send (pending STOMP wiring):', { conversationId, text });
+    if (!conversationId) return false;
+    const ok = stompSend('/app/dm.send', { conversationId, content: text });
+    if (!ok) {
+      console.warn('[DM] STOMP 미연결 — 전송 실패');
+      return false;
+    }
+    return true;
   };
 
   if (!conversation) return null;
