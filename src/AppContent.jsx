@@ -6,6 +6,7 @@ import { clearToken, setUser, refreshAccessToken } from './store/authSlice.js';
 import AppRoutes from './routes/AppRoutes';
 import GlobalToast from './components/common/GlobalToast';
 import { useStomp } from './lib/websocket/useStomp';
+import { useStompErrorRealtime } from './lib/websocket/useStompErrorRealtime';
 import { useDmRealtime } from './features/dm/useDmRealtime';
 import { useNotificationsRealtime } from './features/notifications/useNotificationsRealtime';
 
@@ -16,6 +17,7 @@ const AppContent = () => {
   const [isInit, setIsInit] = useState(false);
 
   useStomp();
+  useStompErrorRealtime();
   useDmRealtime();
   useNotificationsRealtime();
 

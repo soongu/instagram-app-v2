@@ -49,6 +49,9 @@ Base URL: `/api`
     - `H004`: 해시태그 이름이 너무 깁니다.
     - `N001`: 알림을 찾을 수 없습니다.
     - `N002`: 본인의 알림만 읽음 처리할 수 있습니다.
+    - `CV001`: 대화방을 찾을 수 없습니다.
+    - `CV002`: 자기 자신과는 대화할 수 없습니다.
+    - `CV003`: 대화방에 접근할 권한이 없습니다.
 
 ---
 
@@ -828,13 +831,13 @@ Base URL: `/api`
 ```
 - **필드 설명** (`NotificationResponse`):
     - `notificationId` (`long`): 알림 ID (커서로 사용)
-    - `type` (`string`): 알림 종류 — `"LIKE"`, `"COMMENT"`, `"FOLLOW"`, `"MENTION"`
+    - `type` (`string`): 알림 종류 — `"LIKE"`, `"COMMENT"`, `"FOLLOW"`, `"MENTION"`, `"DM"`
     - `senderId` (`long`): 알림을 발생시킨 사람의 회원 ID
     - `senderUsername` (`string`): 알림을 발생시킨 사람의 username
     - `senderProfileImageUrl` (`string | null`): 알림을 발생시킨 사람의 프로필 이미지
-    - `targetId` (`long | null`): 알림 대상 ID. LIKE·COMMENT·MENTION은 `postId`, FOLLOW는 `null`
-    - `targetThumbnailUrl` (`string | null`): 대상 게시물의 썸네일 이미지 URL. LIKE·COMMENT·MENTION은 해당 게시물의 첫 번째 이미지, FOLLOW는 `null`
-    - `message` (`string`): 알림 메시지 (예: "kuromi님이 회원님의 게시물을 좋아합니다")
+    - `targetId` (`long | null`): 알림 대상 ID. LIKE·COMMENT·MENTION은 `postId`, DM은 `conversationId`, FOLLOW는 `null`
+    - `targetThumbnailUrl` (`string | null`): 대상 게시물의 썸네일 이미지 URL. LIKE·COMMENT·MENTION은 해당 게시물의 첫 번째 이미지, FOLLOW·DM은 `null`
+    - `message` (`string`): 알림 메시지 (예: "kuromi님이 회원님의 게시물을 좋아합니다.")
     - `isRead` (`boolean`): 읽음 여부
     - `createdAt` (`string`): 알림 생성 시간
 - **정렬 기준**: `notificationId DESC` (최신 알림부터)
@@ -863,10 +866,278 @@ Base URL: `/api`
 ### 6.3 알림 종류별 트리거 (참고)
 | 알림 종류 | 트리거 액션 | 알림 받는 사람 | 알림 메시지 형식 |
 |----------|------------|--------------|----------------|
-| `LIKE` | 좋아요 누름 (취소 시에는 알림 없음) | 게시물 작성자 | "{username}님이 회원님의 게시물을 좋아합니다" |
-| `COMMENT` | 댓글 작성 | 게시물 작성자 | "{username}님이 댓글을 남겼습니다" |
-| `FOLLOW` | 팔로우 (언팔로우 시에는 알림 없음) | 팔로우 대상 | "{username}님이 회원님을 팔로우하기 시작했습니다" |
-| `MENTION` | 댓글에서 @멘션 | 멘션된 사용자 (여러 명 가능) | "{username}님이 댓글에서 회원님을 언급했습니다" |
+| `LIKE` | 좋아요 누름 (취소 시에는 알림 없음) | 게시물 작성자 | "{username}님이 회원님의 게시물을 좋아합니다." |
+| `COMMENT` | 댓글 작성 | 게시물 작성자 | "{username}님이 댓글을 남겼습니다." |
+| `FOLLOW` | 팔로우 (언팔로우 시에는 알림 없음) | 팔로우 대상 | "{username}님이 회원님을 팔로우하기 시작했습니다." |
+| `MENTION` | 댓글에서 @멘션 | 멘션된 사용자 (여러 명 가능) | "{username}님이 댓글에서 회원님을 언급했습니다." |
+| `DM` | DM 메시지 전송 | 메시지 수신자 | "{username}님이 메시지를 보냈습니다." |
 
 - **자기 알림 필터링**: 내가 내 게시물에 좋아요를 누르거나, 내 게시물에 댓글을 달아도 알림이 생성되지 않습니다 (`senderId == receiverId`인 경우 서버에서 무시).
+
+### 6.4 실시간 알림 Push (WebSocket)
+알림이 DB에 저장되는 시점에 **WebSocket 개인 큐**로도 동시에 전달됩니다. 클라이언트가 WebSocket에 연결되어 있지 않으면 Push는 유실되지만, 알림은 DB에 보관되므로 `GET /api/notifications` 로 복구할 수 있습니다.
+
+- **구독 경로**: `/user/queue/notifications`
+- **Payload**: `NotificationResponse` (6.1 `items[]` 와 동일한 스키마)
+- **보장 수준**: DB 저장 = guaranteed, WebSocket Push = best-effort
+- **연결·인증**: 7.6 STOMP 엔드포인트 참고
+
+---
+
+## 7. DM / WebSocket (`/conversations`, `/ws`)
+
+DM 기능은 **REST 4종**(대화방 CRUD + 메시지 이력/읽음 처리) 과 **STOMP 2종**(실시간 메시지 송수신) 으로 구성됩니다. 실시간 전달은 WebSocket 이 담당하고, 이력·상태 변경·복구는 REST 가 담당하는 **보완 관계** 입니다.
+
+### 7.1 대화방 생성 (또는 기존 반환)
+- **URL**: `/api/conversations/{targetMemberId}`
+- **Method**: `POST`
+- **Description**: 상대방과의 1:1 대화방을 생성합니다. 이미 존재하는 경우 기존 대화방을 그대로 반환합니다 (멱등). 자기 자신과는 생성할 수 없습니다.
+- **Authentication**: **필수** (`Authorization: Bearer <AccessToken>`)
+- **Path Parameters**:
+    - `targetMemberId`: 대화 상대 회원 ID
+- **Request Body**: 없음
+- **Response Body** (`ApiResponse<ConversationResponse>`):
+```json
+{
+  "success": true,
+  "data": {
+    "conversationId": 10,
+    "otherMemberId": 2,
+    "otherMemberUsername": "kuromi",
+    "otherMemberProfileImageUrl": "https://example.com/profile/kuromi.jpg",
+    "lastMessage": null,
+    "lastMessageAt": null,
+    "createdAt": "2026-04-20T10:00:00"
+  },
+  "error": null
+}
+```
+- **에러**:
+    - **400** — 자기 자신과 대화 시도 (`CV002`: 자기 자신과는 대화할 수 없습니다.)
+    - **404** — 대상 회원이 존재하지 않음 (`M004`)
+
+### 7.2 내 대화방 목록 조회 — 커서 기반
+- **URL**: `/api/conversations`
+- **Method**: `GET`
+- **Description**: 로그인한 사용자가 참여한 대화방을 `conversation.id DESC` (최신 생성 우선) 로 페이지네이션해 반환합니다. 각 대화방의 **마지막 메시지 미리보기**가 함께 내려옵니다.
+- **Authentication**: **필수** (`Authorization: Bearer <AccessToken>`)
+- **Query Parameters**:
+    - `cursor` (`long`, optional): 이전 페이지 마지막 `conversationId`. 미지정 시 첫 페이지.
+    - `size` (`int`, optional, default `20`, max `50`): 페이지 크기. 범위를 벗어나면 `[1, 50]` 으로 클램프됩니다.
+- **Response Body** (`ApiResponse<SliceResponse<ConversationResponse>>`):
+```json
+{
+  "success": true,
+  "data": {
+    "hasNext": true,
+    "items": [
+      {
+        "conversationId": 12,
+        "otherMemberId": 3,
+        "otherMemberUsername": "mamel",
+        "otherMemberProfileImageUrl": null,
+        "lastMessage": null,
+        "lastMessageAt": null,
+        "createdAt": "2026-04-19T09:00:00"
+      },
+      {
+        "conversationId": 10,
+        "otherMemberId": 2,
+        "otherMemberUsername": "kuromi",
+        "otherMemberProfileImageUrl": "https://example.com/profile/kuromi.jpg",
+        "lastMessage": "점심 뭐 먹?",
+        "lastMessageAt": "2026-04-20T12:30:00",
+        "createdAt": "2026-04-15T10:00:00"
+      }
+    ]
+  },
+  "error": null
+}
+```
+- **필드 설명** (`ConversationResponse`):
+    - `conversationId` (`long`): 대화방 ID (다음 요청의 `cursor` 로 사용)
+    - `otherMemberId` (`long`): 상대방 회원 ID
+    - `otherMemberUsername` (`string`): 상대방 username
+    - `otherMemberProfileImageUrl` (`string | null`): 상대방 프로필 이미지
+    - `lastMessage` (`string | null`): 마지막 메시지 본문 — 메시지가 없으면 `null`
+    - `lastMessageAt` (`string | null`): 마지막 메시지 생성 시각 — 메시지가 없으면 `null`
+    - `createdAt` (`string`): 대화방 생성 시각
+- **페이지네이션 동작**:
+    - 정렬은 `conversation.id DESC` — `IDENTITY` PK 의 단조 증가 특성을 이용해 안정적인 커서를 제공합니다.
+    - `hasNext=true` 이면 응답 마지막 항목의 `conversationId` 를 다음 요청의 `cursor` 로 전달합니다.
+    - 페이지 내부에서 각 대화방의 "마지막 메시지 미리보기"를 위한 추가 조회가 있으므로 N+1 상한은 `size` 건으로 제한됩니다.
+
+### 7.3 대화방 삭제 (나가기)
+- **URL**: `/api/conversations/{conversationId}`
+- **Method**: `DELETE`
+- **Description**: 대화방과 그 안의 모든 DM 메시지를 **하드 삭제**합니다. 대화방 참여자만 삭제할 수 있습니다. DM 은 민감한 개인 데이터이므로 GDPR Right to Erasure 관점에서 소프트 삭제가 아닌 하드 삭제를 채택했습니다.
+- **Authentication**: **필수** (`Authorization: Bearer <AccessToken>`)
+- **Path Parameters**:
+    - `conversationId`: 삭제할 대화방 ID
+- **Response**: `204 No Content` (본문 없음)
+- **에러**:
+    - **404** — 대화방이 존재하지 않음 (`CV001`: 대화방을 찾을 수 없습니다.)
+    - **403** — 참여자가 아닌 사용자의 삭제 시도 (`CV003`: 대화방에 접근할 권한이 없습니다.)
+
+### 7.4 DM 메시지 이력 조회 — 커서 기반
+- **URL**: `/api/conversations/{conversationId}/messages`
+- **Method**: `GET`
+- **Description**: 대화방의 메시지를 **최신 → 과거** 순서로 커서 페이지네이션으로 반환합니다. WebSocket 이 끊겼을 때 놓친 메시지를 복구하거나, 대화방 진입 시 초기 로딩에 사용합니다. 참여자만 조회할 수 있습니다.
+- **Authentication**: **필수** (`Authorization: Bearer <AccessToken>`)
+- **Path Parameters**:
+    - `conversationId`: 대화방 ID
+- **Query Parameters**:
+    - `cursor` (`long`, optional): 이전 페이지의 마지막 `messageId`. 첫 요청 시 생략
+    - `size` (`int`, optional, default `20`): 한 번에 가져올 메시지 수. `[1, 50]` 범위로 클램프됨
+- **Response Body** (`ApiResponse<SliceResponse<DirectMessageResponse>>`):
+```json
+{
+  "success": true,
+  "data": {
+    "hasNext": true,
+    "items": [
+      {
+        "messageId": 105,
+        "conversationId": 10,
+        "senderId": 2,
+        "senderUsername": "kuromi",
+        "content": "점심 뭐 먹?",
+        "createdAt": "2026-04-20T12:30:00"
+      },
+      {
+        "messageId": 104,
+        "conversationId": 10,
+        "senderId": 1,
+        "senderUsername": "koo",
+        "content": "아무거나!",
+        "createdAt": "2026-04-20T12:29:30"
+      }
+    ]
+  },
+  "error": null
+}
+```
+- **필드 설명** (`DirectMessageResponse`):
+    - `messageId` (`long`): 메시지 ID (커서로 사용)
+    - `conversationId` (`long`): 대화방 ID
+    - `senderId` (`long`): 보낸 사람의 회원 ID
+    - `senderUsername` (`string`): 보낸 사람의 username
+    - `content` (`string`): 메시지 본문
+    - `createdAt` (`string`): 메시지 생성 시각
+- **정렬 기준**: `messageId DESC` (최신 메시지 먼저)
+- **커서 사용법**: 다음 페이지 요청 시 `items` 배열 마지막 항목의 `messageId` 를 `cursor` 로 전달합니다. `hasNext` 가 `false` 이면 더 이상 데이터가 없습니다.
+- **에러**:
+    - **404** — 대화방이 존재하지 않음 (`CV001`)
+    - **403** — 참여자가 아닌 사용자의 조회 시도 (`CV003`)
+
+### 7.5 DM 일괄 읽음 처리
+- **URL**: `/api/conversations/{conversationId}/messages/read`
+- **Method**: `PATCH`
+- **Description**: 해당 대화방에서 **상대방이 보낸 읽지 않은 메시지**를 한 번의 벌크 UPDATE 쿼리로 일괄 읽음 처리합니다. 자기가 보낸 메시지는 이미 "읽은 것" 으로 간주하여 대상에서 제외됩니다. 참여자만 호출할 수 있으며, 프론트엔드는 대화방 진입 시 한 번 호출하는 것을 전제로 합니다.
+- **Authentication**: **필수** (`Authorization: Bearer <AccessToken>`)
+- **Path Parameters**:
+    - `conversationId`: 대화방 ID
+- **Request Body**: 없음
+- **Response Body** (`ApiResponse<Integer>` — 실제로 읽음으로 바뀐 메시지 수):
+```json
+{
+  "success": true,
+  "data": 5,
+  "error": null
+}
+```
+- **용도**: 반환값을 사용해 클라이언트가 안 읽은 메시지 뱃지 카운트를 즉시 감산할 수 있습니다.
+- **에러**:
+    - **404** — 대화방이 존재하지 않음 (`CV001`)
+    - **403** — 참여자가 아닌 사용자의 호출 (`CV003`)
+
+### 7.6 WebSocket (STOMP) 엔드포인트
+실시간 DM 송수신과 알림 Push 에 사용하는 WebSocket 연결 지점입니다.
+
+- **Endpoint**: `ws://{host}:{port}/ws` (SockJS 폴백 지원)
+- **프로토콜**: WebSocket 위에 STOMP 1.2 서브프로토콜
+- **인증 방식**: STOMP `CONNECT` 프레임의 `Authorization: Bearer <AccessToken>` 헤더
+    - **HTTP 핸드셰이크 단계** 는 `permitAll` — 핸드셰이크에서는 JWT 를 검증하지 않음
+    - **STOMP CONNECT 단계** 에서 서버의 `ChannelInterceptor` 가 JWT 를 검증하고, `memberId` 를 세션의 Principal 에 바인딩합니다. 토큰이 없거나 유효하지 않으면 연결이 즉시 종료됩니다.
+    - 한 번 CONNECT 에 성공하면 세션이 유지되는 동안은 재검증하지 않습니다 (백화점 VIP 라운지 모델).
+- **목적지(Destination) 접두어**:
+    - `/app/...` — 클라이언트 → 서버 (메시지 전송)
+    - `/topic/...` — 1:N 브로드캐스트
+    - `/queue/...` — 1:1 개인 큐
+    - `/user/queue/...` — 현재 Principal 의 개인 큐 (자동 라우팅)
+- **에러 프레임**: CONNECT 인증 실패 시 `MessageDeliveryException` 이 STOMP `ERROR` 프레임으로 클라이언트에 전달되고 연결이 종료됩니다.
+
+**연결 예시 (JavaScript / SockJS + stomp.js)**
+```javascript
+const socket = new SockJS('http://localhost:8090/ws');
+const stompClient = Stomp.over(socket);
+
+stompClient.connect(
+    { Authorization: 'Bearer {JWT_ACCESS_TOKEN}' },
+    function(frame) {
+        stompClient.subscribe('/user/queue/dm', function(message) {
+            console.log('[DM]', JSON.parse(message.body));
+        });
+        stompClient.subscribe('/user/queue/notifications', function(message) {
+            console.log('[Notification]', JSON.parse(message.body));
+        });
+    }
+);
+```
+
+### 7.7 STOMP DM 메시지 전송
+- **Destination**: `/app/dm.send`
+- **Direction**: 클라이언트 → 서버 (`SEND` 프레임)
+- **Description**: 대화방에 DM 메시지를 전송합니다. 서버가 메시지를 DB 에 저장한 뒤 **상대방에게는 `convertAndSendToUser`** 로, **보낸 본인에게는 `@SendToUser`** 로 동일한 응답 DTO 를 각자의 `/user/queue/dm` 으로 전달합니다. 보낸 본인에게도 전달하는 이유는 서버가 생성한 `messageId`·`createdAt` 을 받아 목록을 갱신하기 위함입니다.
+- **인증**: STOMP CONNECT 시 바인딩된 Principal 에서 `senderId` 를 서버가 직접 추출합니다. 페이로드의 `senderId` 를 믿지 않습니다 (사칭 방지).
+- **Payload** (`DmSendRequest`):
+```json
+{
+  "conversationId": 10,
+  "content": "안녕!"
+}
+```
+- **Side Effects**:
+    - `direct_messages` 테이블에 새 행 INSERT
+    - 상대방의 `/user/queue/dm` 으로 `DirectMessageResponse` Push
+    - 본인의 `/user/queue/dm` 으로 `DirectMessageResponse` Push (`@SendToUser` 응답)
+    - `NotificationEvent(type=DM, targetId=conversationId)` 발행 — 상대방에게 DM 알림 저장 + `/user/queue/notifications` 로 Push
+- **에러**:
+    - 대화방이 존재하지 않거나 참여자가 아닌 경우 `ConversationException` 이 STOMP `ERROR` 프레임으로 전달됨 (`CV001` / `CV003`)
+
+### 7.8 STOMP DM 타이핑 표시
+- **Destination**: `/app/dm.typing`
+- **Direction**: 클라이언트 → 서버 (`SEND` 프레임)
+- **Description**: "상대방이 입력 중" 표시를 위한 휘발성 이벤트입니다. 서버는 DB 에 저장하지 않고, **상대방에게만** `convertAndSendToUser` 로 `/user/queue/dm-typing` 개인 큐에 푸시합니다. 본인에게는 에코하지 않습니다(자신이 입력 중임은 이미 알고 있으므로).
+- **인증**: 7.7 과 동일. Principal 에서 `senderId` 를 서버가 직접 추출하며, 페이로드의 발신자 정보는 신뢰하지 않습니다.
+- **Payload** (`DmTypingRequest`):
+```json
+{
+  "conversationId": 10,
+  "typing": true
+}
+```
+- **상대방이 수신하는 Payload** (`DmTypingResponse`, `/user/queue/dm-typing`):
+```json
+{
+  "conversationId": 10,
+  "senderId": 42,
+  "senderUsername": "koo",
+  "typing": true
+}
+```
+- **Side Effects**: 없음. DB INSERT / 알림 이벤트 발행 모두 발생하지 않습니다. 재연결 시에도 복구 대상이 아니며, 수신 측은 짧은 TTL 로 자체 소거해야 합니다 (예: `typing:false` 수신 혹은 5초 내 후속 이벤트 없음 시 표시 해제).
+- **에러**: 7.7 과 동일. 대화방이 없거나 참여자가 아닌 경우 `CV001` / `CV003`.
+- **프런트 구현 팁**: 입력 핸들러에서 첫 입력 시 `{typing: true}` 1회 전송, 이후 debounce(예: 3초 inactivity) 또는 `dm.send` 직후 `{typing: false}` 전송. 스팸 방지를 위해 동일 상태 연속 전송은 클라이언트에서 차단합니다.
+
+### 7.9 STOMP 구독 경로 (서버 → 클라이언트 Push)
+클라이언트는 로그인 직후 아래 개인 큐들을 구독하면 DM 실시간 수신·타이핑 표시·알림 Push 를 모두 받을 수 있습니다. `/user/` 접두어 덕분에 Spring 이 현재 Principal 의 큐로만 자동 라우팅합니다 — 다른 사람의 큐는 구독할 수 없습니다.
+
+| 구독 경로 | Payload | 언제 메시지가 오나 |
+|-----------|---------|-------------------|
+| `/user/queue/dm` | `DirectMessageResponse` (7.4 와 동일 스키마) | 상대방이 나에게 DM 을 보냈을 때, 또는 내가 보낸 메시지에 대한 서버 응답 |
+| `/user/queue/dm-typing` | `DmTypingResponse` (7.8 참조) | 대화 상대가 `/app/dm.typing` 을 보냈을 때 (휘발성, DB 미저장) |
+| `/user/queue/notifications` | `NotificationResponse` (6.1 `items[]` 와 동일 스키마) | 나를 대상으로 한 알림이 DB 에 저장될 때 (LIKE / COMMENT / FOLLOW / MENTION / DM) |
+
+- **Push 보장 수준**: DB 저장 = guaranteed, WebSocket Push = best-effort. 연결이 끊겨 있으면 Push 는 유실되며, 클라이언트는 재연결 후 REST (`7.4` DM 이력, `6.1` 알림 목록) 로 누락분을 보충합니다. 타이핑 이벤트는 휘발성이므로 복구 대상이 아닙니다.
 
